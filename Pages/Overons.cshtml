@@ -16,8 +16,9 @@
         <h1 class="hero__title">Een reis door smaak, cultuur en gastvrijheid</h1>
         <p class="hero__lead">Sinds 1998 verwelkomen we onze gasten met authentieke smaken, verse ingrediënten en een warme glimlach. Ontdek het verhaal achter onze keuken, het team en het vakmanschap dat elk bord bijzonder maakt.</p>
         <div class="hero__cta">
-            <a href="reserveren.html" class="btn-pill hero-cta">Reserveer Nu</a>
-            <a href="menu.html" class="btn-pill ghost hero-cta">Bekijk Menu</a>
+            <a asp-page="/Reserveren" class="btn-pill hero-cta">Reserveer Nu</a>
+            <a asp-page="/Menu" asp-fragment="menu" class="btn-pill ghost hero-cta">Bekijk Menu</a>
+
         </div>
         <div class="ornament" aria-hidden="true">
             <svg width="160" height="20" viewBox="0 0 160 20" fill="none" xmlns="http://www.w3.org/2000/svg">
