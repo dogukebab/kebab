@@ -1,0 +1,43 @@
+@page
+@model MySite.Web.Pages.ChatModel
+@{
+    ViewData["Title"] = "Chat";
+}
+
+<h2>Live Chat</h2>
+
+<div id="messagesList" style="border:1px solid #ccc;padding:10px;height:250px;overflow:auto;"></div>
+
+<div style="margin-top:10px;">
+    <input type="text" id="userInput" placeholder="Your name" />
+    <input type="text" id="messageInput" placeholder="Type a message..." />
+    <button id="sendButton">Send</button>
+</div>
+
+@section Scripts {
+    <!-- SignalR JS client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .build();
+
+        connection.on("ReceiveMessage", (user, message) => {
+            const msg = document.createElement("div");
+            msg.textContent = `${user}: ${message}`;
+            document.getElementById("messagesList").appendChild(msg);
+            document.getElementById("messagesList").scrollTop = document.getElementById("messagesList").scrollHeight;
+        });
+
+        connection.start().catch(err => console.error(err));
+
+        document.getElementById("sendButton").addEventListener("click", () => {
+            const user = document.getElementById("userInput").value;
+            const message = document.getElementById("messageInput").value;
+            if (user && message) {
+                connection.invoke("SendMessage", user, message);
+                document.getElementById("messageInput").value = "";
+            }
+        });
+    </script>
+}

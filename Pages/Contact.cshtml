@@ -1,0 +1,114 @@
+﻿@page
+@model MySite.Web.Pages.ContactModel
+@{
+    ViewData["Title"] = "Contact";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/contact.css" asp-append-version="true" /> }
+<section class="contact-hero">
+    <div class="hero-content" data-aos="fade-up">
+        <h1>Een warme ontmoeting begint hier</h1>
+        <p>Wij staan klaar voor al uw vragen, ideeën of feedback.</p>
+
+        <!-- Updated: point directly to the form -->
+        <a href="#contact-form" class="cta-scroll">Stuur ons een bericht</a>
+        <span class="scroll-chevron" aria-hidden="true"></span>
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section id="contact" class="contact-section" data-aos="fade-up">
+    <div class="contact-container">
+        <div class="contact-info">
+            <h2>Onze Gegevens</h2>
+
+            <ul class="info-list">
+                <li><span class="label">Adres</span><span class="value">Lispersteenweg 10, 2500 Lier</span></li>
+                <li><span class="label">Telefoon</span><span class="value"><a href="tel:+32496452649">0496 45 26 49</a></span></li>
+                <li><span class="label">Email</span><span class="value"><a href="mailto:info@dogukebab.be">info@dogukebab.be</a></span></li>
+            </ul>
+
+            <h3 class="subhead">Openingsuren</h3>
+            <ul class="hours-list">
+                <li><span class="day">Maandag</span><span class="time">Gesloten</span></li>
+                <li><span class="day">Dinsdag</span><span class="time">16:00 – 22:00</span></li>
+                <li><span class="day">Woensdag</span><span class="time">16:00 – 22:00</span></li>
+                <li><span class="day">Donderdag</span><span class="time">12:00 – 22:00</span></li>
+                <li><span class="day">Vrijdag</span><span class="time">12:00 – 22:00</span></li>
+                <li><span class="day">Zaterdag</span><span class="time">12:00 – 22:00</span></li>
+                <li><span class="day">Zondag</span><span class="time">12:00 – 22:00</span></li>
+            </ul>
+        </div>
+
+        <!-- Updated: added id="contact-form" so the anchor lands here -->
+        <div class="contact-form" id="contact-form">
+            <h2>Stuur ons een bericht</h2>
+
+            <!-- ✅ Wired to Web3Forms -->
+            <form id="contactForm" action="https://api.web3forms.com/submit" method="POST" novalidate>
+                <!-- Required hidden fields -->
+                <input type="hidden" name="access_key" value="98a9c2d1-69b6-4d3b-912b-7f3436303fc0" />
+                <input type="hidden" name="subject" value="Nieuw bericht via Contact – Pepper Lier" />
+                <input type="hidden" name="from_name" value="Contact Formulier" />
+
+                <input type="text" name="name" id="cname" placeholder="Naam" required />
+                <input type="email" name="email" placeholder="Email" required />
+                <input type="tel" name="phone" placeholder="Telefoonnummer" />
+                <textarea name="message" placeholder="Uw bericht..." rows="5" required></textarea>
+
+                <!-- Optional honeypot anti-spam -->
+                <input type="checkbox" name="botcheck" style="display:none!important" tabindex="-1" autocomplete="off">
+
+                <button type="submit">Versturen</button>
+                <p id="contactStatus" class="status" hidden></p>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Google Maps -->
+<section class="map-section" data-aos="fade-up">
+    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2503.373202523927!2d4.56756698633884!3d51.138468664711944!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c3fd2ae13053f3%3A0x9d60a2cf5be022f!2sDogu%20Kebab!5e0!3m2!1snl!2sbe!4v1754934522023!5m2!1snl!2sbe"
+            width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+</section>
+
+
+
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+    AOS.init();
+
+    const cForm = document.getElementById('contactForm');
+    const cStatus = document.getElementById('contactStatus');
+
+    cForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(cForm);
+        try {
+            const res = await fetch(cForm.action, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body: formData
+            });
+            const out = await res.json();
+            if (out.success) {
+                cStatus.hidden = false;
+                cStatus.textContent = 'Bericht verzonden! We nemen spoedig contact met u op. ✅';
+                cForm.reset();
+            } else {
+                cStatus.hidden = false;
+                cStatus.textContent = 'Verzenden mislukt. Probeer het later opnieuw.';
+            }
+        } catch {
+            cStatus.hidden = false;
+            cStatus.textContent = 'Netwerkfout. Controleer uw verbinding en probeer opnieuw.';
+        }
+    });
+
+    // After smooth scroll, focus the first field
+    document.querySelector('.cta-scroll')?.addEventListener('click', () => {
+        setTimeout(() => document.getElementById('cname')?.focus(), 600);
+    });
+</script>
+}

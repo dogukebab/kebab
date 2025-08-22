@@ -1,0 +1,428 @@
+@page "/AdminChat"
+@model MySite.Web.Pages.AdminChatModel
+@{
+    ViewData["Title"] = "Admin Chat Panel";
+}
+
+<h2>Admin Chat Panel</h2>
+
+<style>
+    .admin-wrap {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 16px
+    }
+
+    .admin-guests {
+        background: #faf8f3;
+        padding: 12px;
+        border-radius: 10px
+    }
+
+    .guest-list {
+        list-style: none;
+        margin: 0;
+        padding: 0
+    }
+
+        .guest-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #fff
+        }
+
+            .guest-list li.active {
+                background: #ffe7a8;
+                font-weight: 700
+            }
+
+        .guest-list .label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .guest-list .badge {
+            min-width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            background: #c62828;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 0 6px
+        }
+
+        .guest-list li.dim .badge {
+            opacity: .65
+        }
+
+    .admin-chat {
+        background: #fff;
+        padding: 12px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,.06);
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 8px
+    }
+
+    .chat-header {
+        font-weight: 700;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #eee
+    }
+
+    .chat-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap
+    }
+
+    .chat-messages {
+        height: 420px;
+        overflow: auto;
+        background: #f8f6f0;
+        padding: 10px;
+        border-radius: 8px
+    }
+
+    .bubble {
+        max-width: 75%;
+        padding: 8px 10px;
+        margin: 8px 0;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,.06);
+        position: relative
+    }
+
+        .bubble.me {
+            margin-left: auto;
+            background: #e8f5e9
+        }
+
+        .bubble.them {
+            margin-right: auto;
+            background: #fff
+        }
+
+        .bubble .meta {
+            font-size: 11px;
+            opacity: .75;
+            margin-top: 4px;
+            text-align: right
+        }
+
+        .bubble .del {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            opacity: .6
+        }
+
+            .bubble .del:hover {
+                opacity: 1
+            }
+
+    .admin-reply {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px
+    }
+
+    .chat-input {
+        border: 1px solid rgba(0,0,0,.2);
+        border-radius: 10px;
+        padding: 10px 12px
+    }
+
+    .chat-send {
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        background: #c62828;
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer
+    }
+
+        .chat-send:disabled {
+            opacity: .5;
+            cursor: not-allowed
+        }
+
+    .link-btn {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        text-decoration: none
+    }
+</style>
+
+<div class="admin-wrap">
+    <aside class="admin-guests">
+        <h3>Guests online</h3>
+        <ul id="guestList" class="guest-list"></ul>
+    </aside>
+
+    <section class="admin-chat">
+        <div id="chatHeader" class="chat-header">No guest selected</div>
+
+        <div class="chat-actions">
+            <span id="adminOnlineBadge" class="link-btn" style="pointer-events:none">Admins online: 0</span>
+            <a id="exportJson" class="link-btn" href="#" target="_blank" rel="noopener">Export JSON</a>
+            <a id="exportCsv" class="link-btn" href="#" target="_blank" rel="noopener">Export CSV</a>
+            <button id="clearChat" class="link-btn" type="button" style="background:#ffe5e5">Clear chat</button>
+        </div>
+
+        <div id="adminMessages" class="chat-messages"></div>
+
+        <div class="admin-reply">
+            <input id="adminInput" class="chat-input" placeholder="Type a reply…" />
+            <button id="adminSend" class="chat-send" disabled>Send</button>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script>
+        (() => {
+            // ------- DOM -------
+            const guestListEl = document.getElementById("guestList");
+            const chatHeaderEl = document.getElementById("chatHeader");
+            const messagesEl = document.getElementById("adminMessages");
+            const inputEl = document.getElementById("adminInput");
+            const sendBtn = document.getElementById("adminSend");
+            const exportJson = document.getElementById("exportJson");
+            const exportCsv = document.getElementById("exportCsv");
+            const adminOnlineBadge = document.getElementById("adminOnlineBadge");
+            const clearBtn = document.getElementById("clearChat");
+
+            // ------- State -------
+            const guests = new Map(); // id -> { label }
+            const logs = new Map(); // id -> [bubble elements]
+            const unread = new Map(); // id -> number
+            const lastTs = new Map(); // id -> number (for sorting)
+            let selected = null;
+
+            // ------- Helpers -------
+            const getUnread = id => unread.get(id) || 0;
+            const bumpUnread = id => unread.set(id, getUnread(id) + 1);
+            const markRead = id => unread.set(id, 0);
+
+            function updateExportLinks() {
+                if (!selected) {
+                    exportJson.href = "#"; exportCsv.href = "#";
+                    exportJson.classList.add("disabled"); exportCsv.classList.add("disabled");
+                    return;
+                }
+                exportJson.classList.remove("disabled"); exportCsv.classList.remove("disabled");
+                exportJson.href = `/api/chats/${selected}/export?format=json`;
+                exportCsv.href = `/api/chats/${selected}/export?format=csv`;
+            }
+
+            function renderGuests() {
+                // build a sorted array: unread first, then by lastTs desc
+                const items = [...guests.entries()].map(([id, g]) => {
+                    return { id, label: g.label, u: getUnread(id), ts: lastTs.get(id) || 0 };
+                }).sort((a, b) => {
+                    if ((b.u > 0) !== (a.u > 0)) return b.u - a.u;      // unread chats on top
+                    return (b.ts || 0) - (a.ts || 0);                   // then most recent
+                });
+
+                guestListEl.innerHTML = "";
+                for (const it of items) {
+                    const li = document.createElement("li");
+                    li.dataset.id = it.id;
+                    if (selected === it.id) li.classList.add("active");
+                    if (it.u === 0) li.classList.add("dim");
+
+                    const label = document.createElement("span");
+                    label.className = "label";
+                    label.textContent = `${it.label} (${it.id.slice(-4).toUpperCase()})`;
+
+                    li.appendChild(label);
+
+                    if (it.u > 0) {
+                        const badge = document.createElement("span");
+                        badge.className = "badge";
+                        badge.textContent = it.u;
+                        badge.title = `${it.u} unread`;
+                        li.appendChild(badge);
+                    }
+
+                    li.onclick = () => selectGuest(it.id);
+                    guestListEl.appendChild(li);
+                }
+            }
+
+            function selectGuest(id) {
+                selected = id;
+                markRead(id);
+                [...guestListEl.children].forEach(li => li.classList.toggle("active", li.dataset.id === id));
+                chatHeaderEl.textContent = `Chat with ${guests.get(id)?.label ?? id}`;
+                messagesEl.innerHTML = "";
+                (logs.get(id) || []).forEach(b => messagesEl.appendChild(b));
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+                sendBtn.disabled = false;
+                inputEl.focus();
+                updateExportLinks();
+                renderGuests(); // refresh badges
+            }
+
+            const makeDeleteBtn = (messageId) => {
+                const btn = document.createElement("button");
+                btn.className = "del";
+                btn.title = "Delete message";
+                btn.textContent = "🗑";
+                btn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (!selected || !messageId) return;
+                    try { await conn.invoke("AdminDeleteMessage", messageId, selected); }
+                    catch (err) { console.error(err); }
+                };
+                return btn;
+            };
+
+            // senderLabel in meta; 'mine' styles current admin's own messages
+            const pushBubble = (chatId, senderLabel, text, mine, messageId, ts) => {
+                const b = document.createElement("div");
+                b.className = "bubble " + (mine ? "me" : "them");
+                if (messageId) b.dataset.id = messageId;
+
+                const t = document.createElement("div");
+                t.textContent = text;
+
+                const m = document.createElement("div");
+                m.className = "meta";
+                const time = ts ? new Date(ts) : new Date();
+                m.textContent = `${senderLabel} • ${time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+                b.append(t, m);
+                if (messageId) b.appendChild(makeDeleteBtn(messageId));
+
+                if (!logs.has(chatId)) logs.set(chatId, []);
+                logs.get(chatId).push(b);
+
+                if (selected === chatId) {
+                    messagesEl.appendChild(b);
+                    messagesEl.scrollTop = messagesEl.scrollHeight;
+                }
+            };
+
+            // ------- SignalR -------
+            const conn = new signalR.HubConnectionBuilder()
+                .withUrl("/chatHub")
+                .withAutomaticReconnect()
+                .build();
+
+            conn.on("GuestJoined", (id, label) => {
+                guests.set(id, { label });
+                // initialize sort meta
+                if (!lastTs.has(id)) lastTs.set(id, 0);
+                renderGuests();
+                if (!selected) selectGuest(id);
+            });
+
+            conn.on("GuestLeft", (id) => {
+                guests.delete(id);
+                logs.delete(id);
+                unread.delete(id);
+                lastTs.delete(id);
+                if (selected === id) {
+                    selected = null;
+                    messagesEl.innerHTML = "";
+                    chatHeaderEl.textContent = "No guest selected";
+                    sendBtn.disabled = true;
+                    updateExportLinks();
+                }
+                renderGuests();
+            });
+
+            // IMPORTANT: Hub should echo admin's own send as label "You"
+            conn.on("ReceiveFromGuest", (id, label, message, msgId, ts) => {
+                if (!guests.has(id)) { guests.set(id, { label }); }
+                lastTs.set(id, ts || Date.now());
+
+                const mine = (label === "You");
+                pushBubble(id, label, message, mine, msgId, ts);
+
+                // unread logic
+                if (selected !== id) {
+                    bumpUnread(id);
+                } else {
+                    markRead(id);
+                }
+                renderGuests();
+
+                // auto-select first guest if none selected yet
+                if (!selected) selectGuest(id);
+            });
+
+            conn.on("MessageDeleted", (chatId, messageId) => {
+                const node = messagesEl.querySelector(`[data-id='${messageId}']`);
+                if (node) node.remove();
+                const arr = logs.get(chatId);
+                if (arr) {
+                    const idx = arr.findIndex(el => el.dataset && el.dataset.id === messageId);
+                    if (idx >= 0) arr.splice(idx, 1);
+                }
+            });
+
+            conn.on("ChatCleared", (chatId) => {
+                logs.set(chatId, []);
+                if (selected === chatId) messagesEl.innerHTML = "";
+            });
+
+            conn.on("AdminOnline", (count) => {
+                adminOnlineBadge.textContent = `Admins online: ${count}`;
+            });
+
+            conn.start()
+                .then(() => conn.invoke("RegisterAdmin"))
+                .then(updateExportLinks)
+                .catch(err => console.error(err));
+
+            // ------- UI actions -------
+            sendBtn.onclick = async () => {
+                const msg = inputEl.value.trim();
+                if (!msg || !selected) return;
+                try {
+                    await conn.invoke("SendFromAdmin", selected, msg);
+                    // Hub echoes back to THIS admin with label "You"
+                    inputEl.value = "";
+                    inputEl.focus();
+                } catch (e) { console.error(e); }
+            };
+
+            clearBtn.onclick = async () => {
+                if (!selected) return;
+                if (!confirm("Clear the entire chat for this guest?")) return;
+                try { await conn.invoke("AdminClearChat", selected); }
+                catch (e) { console.error(e); }
+            };
+
+            inputEl.addEventListener("keydown", e => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendBtn.click();
+                }
+            });
+        })();
+    </script>
+}

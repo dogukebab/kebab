@@ -1,0 +1,84 @@
+﻿@* Pages/Shared/_Layout.cshtml *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - MySite.Web</title>
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a class="logo" asp-page="/Index" aria-label="Home">
+                <img src="~/images/logo.jpg" asp-append-version="true" alt="Pepper Lier logo" />
+                <span class="brand-text">Pepper&nbsp;Lier</span>
+            </a>
+
+            <button class="menu-toggle" aria-controls="site-nav" aria-expanded="false" aria-label="Menu">☰</button>
+            <div id="site-nav" class="nav-links" role="navigation">
+                <a class="nav-link" asp-page="/Index">Home</a>
+                <a class="nav-link" asp-page="/Menu">Menu</a>
+                <a class="nav-link" asp-page="/Overons">Over ons</a>
+                <a class="nav-link" asp-page="/Reserveren">Reserveren</a>
+                <a class="nav-link" asp-page="/Contact">Contact</a>
+        
+            </div>
+        </nav>
+    </header>
+
+    <main id="main-content" role="main">
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <p>&copy; @DateTime.Now.Year Pepper Lier. Alle rechten voorbehouden.</p>
+        <div class="socials">
+            <a href="https://www.facebook.com/dogukebab/?locale=tr_TR">Facebook</a>
+            <a href="https://www.instagram.com/pepper_lier/">Instagram</a>
+            <a href="https://wa.me/+32496452649" target="_blank" rel="noopener" aria-label="WhatsApp">Whatsapp</a>
+        </div>
+    </footer>
+
+    @{
+    var path = Context?.Request?.Path.Value?.ToLowerInvariant() ?? "";
+    }
+    @if (path != "/adminchat")
+{
+    <!-- Floating chat widget (hidden on AdminChat) -->
+    <partial name="_ChatWidget" />
+
+ <!-- LOCAL SignalR only -->
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script src="~/js/chatwidget.js" asp-append-version="true"></script>
+}
+
+    <!-- Menu toggle + active link -->
+    <script>
+        (function () {
+            const t = document.querySelector('.menu-toggle'),
+                n = document.getElementById('site-nav');
+            if (t && n) {
+                t.addEventListener('click', () => {
+                    const s = n.classList.toggle('show');
+                    t.setAttribute('aria-expanded', s ? 'true' : 'false');
+                });
+            }
+            const cur = location.pathname.toLowerCase();
+            document.querySelectorAll('#site-nav .nav-link').forEach(a => {
+                try {
+                    const u = new URL(a.href);
+                    if (u.pathname.toLowerCase() === cur ||
+                        (cur === '/' && (u.pathname === '/' || u.pathname.toLowerCase() === '/index'))) {
+                        a.classList.add('active');
+                    }
+                } catch { }
+            });
+        })();
+    </script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,162 @@
+@{
+    ViewData["Title"] = "Bestellen";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<section class="bg-gray-50 min-h-screen py-12">
+    <div class="max-w-7xl mx-auto px-6">
+        <h1 class="text-4xl font-bold mb-12 text-center">Jouw Bestelling</h1>
+
+        <div class="grid md:grid-cols-3 gap-10">
+            <!-- GEGEVENS + WINKELMAND (SOLA) -->
+            <div class="md:col-span-2 space-y-10 order-2 md:order-1">
+                <!-- Winkelmand -->
+                <div class="space-y-6">
+                    <div id="cartItems" class="space-y-4"></div>
+                    <div id="emptyCart" class="text-center text-gray-500 hidden">Je winkelmandje is leeg.</div>
+                    <div id="totalPrice" class="text-right font-bold text-lg mt-6 hidden"></div>
+                </div>
+
+                <!-- Formulier -->
+                <form method="post" action="/Betalen" id="checkoutForm" class="bg-white p-8 rounded shadow-md space-y-6">
+                    <h2 class="text-2xl font-bold mb-4">Gegevens</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block font-semibold mb-1">Naam</label>
+                            <input type="text" name="naam" class="w-full border px-4 py-2 rounded" required />
+                        </div>
+                        <div>
+                            <label class="block font-semibold mb-1">Adres</label>
+                            <input type="text" name="adres" id="adresInput" class="w-full border px-4 py-2 rounded" required oninput="renderCart()" />
+                        </div>
+                        <div>
+                            <label class="block font-semibold mb-1">Telefoonnummer</label>
+                            <input type="tel" name="telefoon" class="w-full border px-4 py-2 rounded" required />
+                        </div>
+                        <div>
+                            <label class="block font-semibold mb-1">Gewenste Levertijd</label>
+                            <input type="time" name="tijd" class="w-full border px-4 py-2 rounded" />
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block font-semibold mb-1">E-mailadres</label>
+                            <input type="email" name="email" class="w-full border px-4 py-2 rounded" required />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Opmerkingen</label>
+                        <textarea name="opmerking" class="w-full border px-4 py-2 rounded" rows="3"></textarea>
+                    </div>
+                    <input type="hidden" name="jsonCart" id="jsonCart" />
+                    <button id="checkoutBtn" type="button" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-bold">
+                        Bestellen en Betalen
+                    </button>
+                </form>
+            </div>
+
+            <!-- DAGPROMO + EXTRA INFO (SAĞDA) -->
+            <div class="order-1 md:order-2 space-y-8">
+                <!-- Dagpromo -->
+                <div class="bg-white p-6 rounded shadow-md">
+                    <h2 class="text-xl font-semibold mb-3">📦 Dagpromo</h2>
+                    <img src="https://source.unsplash.com/400x300/?burger,snack" class="rounded mb-3" alt="Dagdeal" />
+                    <p class="text-gray-600">Bestel vandaag nog en ontvang gratis saus bij elk menu!</p>
+                </div>
+
+                <!-- Veilig Betalen -->
+                <div class="bg-green-50 border border-green-300 p-6 rounded shadow-md">
+                    <h2 class="text-lg font-semibold text-green-700 mb-2">✅ Veilig Betalen</h2>
+                    <p class="text-sm text-gray-700">Wij gebruiken Stripe voor veilige en versleutelde betalingen. Jouw gegevens zijn 100% beschermd.</p>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Stripe_Logo%2C_revised_2016.svg/512px-Stripe_Logo%2C_revised_2016.svg.png"
+                         alt="Stripe" class="w-28 mt-3" />
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        const cartItems = document.getElementById("cartItems");
+        const emptyCart = document.getElementById("emptyCart");
+        const totalPriceEl = document.getElementById("totalPrice");
+        const adresInput = document.getElementById("adresInput");
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+        function renderCart() {
+            cartItems.innerHTML = "";
+            if (cart.length === 0) {
+                emptyCart.classList.remove("hidden");
+                totalPriceEl.classList.add("hidden");
+                return;
+            }
+
+            let subtotal = 0;
+            emptyCart.classList.add("hidden");
+
+            cart.forEach((item, index) => {
+                const itemTotal = item.prijs * item.aantal;
+                subtotal += itemTotal;
+
+                const div = document.createElement("div");
+                div.className = "flex items-center justify-between bg-white p-4 rounded shadow";
+                div.innerHTML = `
+                            <div>
+                                <h3 class="font-bold">${item.naam}</h3>
+                                <p class="text-sm text-gray-500">Formaat: ${item.formaat}</p>
+                                <p class="text-sm text-gray-500">Prijs: €${item.prijs.toFixed(2)} × ${item.aantal}</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="updateQty(${index}, -1)" class="bg-gray-300 px-2 rounded">−</button>
+                                <span>${item.aantal}</span>
+                                <button onclick="updateQty(${index}, 1)" class="bg-gray-300 px-2 rounded">+</button>
+                                <button onclick="removeItem(${index})" class="text-red-600 font-bold ml-2">×</button>
+                            </div>`;
+                cartItems.appendChild(div);
+            });
+
+            const adres = adresInput.value.toLowerCase();
+            let extra = 0;
+            let notes = "";
+
+            if (!adres.includes("lier") && adres.length > 2) {
+                extra += 7;
+                notes += "📍 Buiten Lier: +€7,00<br>";
+            }
+
+            if (subtotal < 18) {
+                extra += 5;
+                notes += "📦 Bestelling onder €18: +€5,00<br>";
+            }
+
+            const totaal = subtotal + extra;
+
+            totalPriceEl.innerHTML = `
+                        Subtotaal: €${subtotal.toFixed(2)}<br>
+                        ${notes !== "" ? notes : ""}
+                        <span class="block mt-1 text-xl">Totaal: €${totaal.toFixed(2)}</span>
+                    `;
+            totalPriceEl.classList.remove("hidden");
+        }
+
+        function updateQty(index, change) {
+            if (cart[index].aantal + change <= 0) return;
+            cart[index].aantal += change;
+            localStorage.setItem("cart", JSON.stringify(cart));
+            renderCart();
+        }
+
+        function removeItem(index) {
+            cart.splice(index, 1);
+            localStorage.setItem("cart", JSON.stringify(cart));
+            renderCart();
+        }
+
+        document.getElementById("checkoutBtn").addEventListener("click", function () {
+            const jsonData = JSON.stringify(cart);
+            document.getElementById("jsonCart").value = jsonData;
+            document.getElementById("checkoutForm").submit();
+        });
+
+        renderCart();
+    </script>
+}

@@ -1,0 +1,227 @@
+﻿@page
+@model MySite.Web.Pages.OveronsModel
+@{
+    ViewData["Title"] = "Over ons";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/overons.css" asp-append-version="true" />
+}
+<!-- ===================== HERO ===================== -->
+<section class="hero" aria-label="Over Ons Hero">
+    <div class="hero__overlay" aria-hidden="true"></div>
+    <div class="bokeh" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+
+    <div class="hero__content" data-parallax data-speed="0.3" data-aos="fade-up">
+        <span class="hero__kicker">Over Ons</span>
+        <h1 class="hero__title">Een reis door smaak, cultuur en gastvrijheid</h1>
+        <p class="hero__lead">Sinds 1998 verwelkomen we onze gasten met authentieke smaken, verse ingrediënten en een warme glimlach. Ontdek het verhaal achter onze keuken, het team en het vakmanschap dat elk bord bijzonder maakt.</p>
+        <div class="hero__cta">
+            <a href="reserveren.html" class="btn-pill hero-cta">Reserveer Nu</a>
+            <a href="menu.html" class="btn-pill ghost hero-cta">Bekijk Menu</a>
+        </div>
+        <div class="ornament" aria-hidden="true">
+            <svg width="160" height="20" viewBox="0 0 160 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 10 H60" stroke="currentColor" stroke-width="1.5" opacity=".6" />
+                <circle cx="80" cy="10" r="4" stroke="currentColor" stroke-width="1.5" fill="none" />
+                <path d="M100 10 H158" stroke="currentColor" stroke-width="1.5" opacity=".6" />
+            </svg>
+        </div>
+        <ul class="badges" role="list">
+            <li class="badge" id="rotating-badge">
+                <span class="badge__title" id="badge-title">Uw Tafel Wacht</span>
+                <span class="badge__desc" id="badge-desc">Reserveer vandaag nog</span>
+            </li>
+            <li class="badge">
+                <span class="badge__title">Address</span>
+                <span class="badge__desc">Lispersteenweg 10 • 2500 Lier</span>
+            </li>
+            <li class="badge">
+                <span class="badge__title">Reserveer</span>
+                <a class="badge__link" href="tel:+3212345678">0496 45 26 49</a>
+            </li>
+        </ul>
+    </div>
+</section>
+
+<!-- ===================== TEAM ===================== -->
+<section class="team-luxury-section" data-aos="fade-up">
+    <h2 class="team-heading">Ontmoet ons Team</h2>
+
+    <div class="team-carousel">
+        <!-- 1 -->
+        <article class="team-member-card chef">
+            <span class="blur-circle circle1" aria-hidden="true"></span>
+            <figure class="team-photo">
+                <!-- LIGHTBOX TRIGGER -->
+                <a href="#lb-ulgar" class="avatar-link">
+                    <img src="images/person1.jpg" alt="Ulgar – Chef" loading="lazy">
+                </a>
+            </figure>
+            <h4>Ulgar <span class="badge">Chef</span></h4>
+            <p class="role">Chef &amp; Mede-oprichter</p>
+            <blockquote>“Passie voor smaak en perfectie op elk bord.”</blockquote>
+        </article>
+
+        <!-- 2 -->
+        <article class="team-member-card chef">
+            <span class="blur-circle circle1" aria-hidden="true"></span>
+            <figure class="team-photo">
+                <!-- LIGHTBOX TRIGGER -->
+                <a href="#lb-ulgar" class="avatar-link">
+                    <img src="images/anita.png" alt="Ulgar – Chef" loading="lazy">
+                </a>
+            </figure>
+            <h4>Anita <span class="badge">Chef</span></h4>
+            <p class="role">Chef &amp; Mede-oprichter</p>
+            <blockquote>“Dagverse kwaliteit, elke dag opnieuw.”</blockquote>
+        </article>
+
+        <!-- 3 -->
+        <article class="team-member-card">
+            <span class="blur-circle circle3" aria-hidden="true"></span>
+            <figure class="team-photo">
+                <a href="#lb-tolga" class="avatar-link">
+                    <img src="images/ober.jpg" alt="Tolga – Ober" loading="lazy">
+                </a>
+            </figure>
+            <h4>Tolga</h4>
+            <p class="role">Ober</p>
+            <blockquote>“Gastvrijheid begint met een glimlach.”</blockquote>
+        </article>
+    </div>
+</section>
+
+<!-- LIGHTBOXLAR -->
+<div id="lb-ulgar" class="team-lightbox">
+    <a class="lb-bg" href="#" aria-label="Sluiten"></a>
+    <img src="images/ulgar.png" alt="Ulgar – Chef">
+</div>
+<div id="lb-anita" class="team-lightbox">
+    <a class="lb-bg" href="#" aria-label="Sluiten"></a>
+    <img src="images/Anita.png" alt="Anita – Medewerker">
+</div>
+<div id="lb-tolga" class="team-lightbox">
+    <a class="lb-bg" href="#" aria-label="Sluiten"></a>
+    <img src="images/ober.jpg" alt="Tolga – Ober">
+</div>
+
+<!-- ===================== WAAROM WIJ ===================== -->
+<section class="waaromwij" data-aos="fade-up">
+    <h2>Waarom Wij?</h2>
+    <div class="why-container">
+        <div class="why-col">
+            <div class="why-card">
+                <img src="https://img.icons8.com/ios-filled/64/plant-under-sun.png" alt="Team" />
+                <h3>Ervaren team</h3>
+                <p>Ons team brengt jarenlange ervaring samen in gastvrijheid en culinaire tradities.</p>
+            </div>
+            <div class="why-card">
+                <img src="https://img.icons8.com/ios-filled/64/leaf.png" alt="Tuin" />
+                <h3>Verse ingrediënten</h3>
+                <p>Dagelijks geselecteerde producten van topkwaliteit uit lokale markten.</p>
+            </div>
+        </div>
+        <div class="why-image">
+            <img src="images/dishes10.png" alt="Waarom Wij" />
+        </div>
+        <div class="why-col">
+            <div class="why-card">
+                <img src="https://img.icons8.com/ios-filled/64/checked--v1.png" alt="Gastvrij" />
+                <h3>Gastvrijheid</h3>
+                <p>Onze gasten staan altijd centraal – met persoonlijke service en een glimlach.</p>
+            </div>
+            <div class="why-card">
+                <img src="https://img.icons8.com/ios-filled/64/shopping-cart.png" alt="Prijs" />
+                <h3>Betaalbare luxe</h3>
+                <p>Hoogstaande gerechten voor eerlijke prijzen – kwaliteit voor iedereen toegankelijk.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ===================== VIDEOS ===================== -->
+<section class="videos" id="videos">
+    <h2>Video’s</h2>
+    <div class="vid-list">
+        <article class="vid-card"><figure class="media"><video src="videos/video6.mp4" poster="images/grill-poster.jpg" playsinline muted loop preload="metadata" controls></video></figure><div class="body"><h3>Vers uit de Oven</h3></div></article>
+        <article class="vid-card"><figure class="media"><video src="videos/video7.mp4" poster="images/grill-poster.jpg" playsinline muted loop preload="metadata" controls></video></figure><div class="body"><h3>Service & Sfeer</h3></div></article>
+        <article class="vid-card"><figure class="media"><video src="videos/video1.mp4" poster="images/mezze-poster.jpg" playsinline muted loop preload="metadata" controls></video></figure><div class="body"><h3>Behind the Scenes</h3></div></article>
+        <article class="vid-card"><figure class="media"><video src="videos/video2.mp4" poster="images/grill-poster.jpg" playsinline muted loop preload="metadata" controls></video></figure><div class="body"><h3>Op de Grill</h3></div></article>
+        <article class="vid-card"><figure class="media"><video src="videos/video4.mp4" poster="images/grill-poster.jpg" playsinline muted loop preload="metadata" controls></video></figure><div class="body"><h3>Dagverse Specials</h3></div></article>
+        <article class="vid-card"><figure class="media"><video src="videos/video5.mp4" poster="images/grill-poster.jpg" playsinline muted loop preload="metadata" controls></video></figure><div class="body"><h3>Keukenmomenten</h3></div></article>
+
+    </div>
+</section>
+
+<!-- Footer -->
+<!-- AOS -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>AOS.init();</script>
+
+<!-- Swiper JS -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', function () {
+        const swiper = new Swiper('.favorites-swiper', {
+            loop: true,
+            autoplay: { delay: 1500, disableOnInteraction: false },
+            navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+            pagination: { el: '.swiper-pagination', clickable: true },
+            spaceBetween: 30,
+            slidesPerView: 1,
+            breakpoints: { 768: { slidesPerView: 2 }, 1024: { slidesPerView: 3 } }
+        });
+    });
+
+    // Minimal parallax on hero
+    (function () {
+        const el = document.querySelector('[data-parallax]');
+        if (!el) return;
+        const speed = parseFloat(el.getAttribute('data-speed')) || 0.3;
+        const onScroll = () => { el.style.transform = `translateY(${window.scrollY * speed}px)`; };
+        window.addEventListener('scroll', onScroll, { passive: true });
+    })();
+
+    // Rotating badge
+    const messages = [
+        { title: "Uw Tafel Wacht", desc: "Reserveer vandaag nog" },
+        { title: "Special van de Dag", desc: "Proef onze chef’s creatie" },
+        { title: "Sinds 1998", desc: "Meer dan 25 jaar smaak & gastvrijheid" },
+        { title: "Met Liefde Bereid", desc: "Alleen de beste ingrediënten" }
+    ];
+    let currentIndex = 0;
+    const titleEl = document.getElementById("badge-title");
+    const descEl = document.getElementById("badge-desc");
+    setInterval(() => {
+        currentIndex = (currentIndex + 1) % messages.length;
+        titleEl.textContent = messages[currentIndex].title;
+        descEl.textContent = messages[currentIndex].desc;
+    }, 4000);
+
+    // Autoplay/pause videos on scroll
+    document.addEventListener('DOMContentLoaded', () => {
+        const vids = document.querySelectorAll('.videos video');
+
+        // görünürlükte oynat/durdur
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                const v = e.target;
+                if (e.isIntersecting) { v.play().catch(() => { }); }
+                else { v.pause(); }
+            });
+        }, { threshold: 0.6 });
+
+        vids.forEach(v => {
+            // varsayılan hız: 0.85 (biraz yavaş)
+            const rate = parseFloat(v.dataset.speed || '0.65');
+
+            // hızı her oynatmada/metadata yüklendiğinde uygula (Safari uyumu)
+            const applyRate = () => { v.playbackRate = rate; };
+            v.addEventListener('loadedmetadata', applyRate);
+            v.addEventListener('play', applyRate);
+            if (v.readyState >= 1) applyRate();
+
+            io.observe(v);
+        });
+    });</script>
+}

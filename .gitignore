@@ -1,0 +1,20 @@
+# Build & IDE
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# IDEs
+.idea/
+.vscode/
+
+# User-specific
+*.userprefs
+
+# Local secrets
+secrets.json
+appsettings.*.local.json

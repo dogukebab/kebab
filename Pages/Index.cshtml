@@ -1,0 +1,128 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<!-- Hero -->
+<section class="hero-slideshow">
+    <div class="slides" aria-hidden="true">
+        <div class="slide s1"></div>
+        <div class="slide s2"></div>
+        <div class="slide s3"></div>
+        <div class="slide s4"></div>
+        <div class="slide s5"></div>
+    </div>
+
+    <div class="hero-overlay">
+        <div class="hero-content" data-aos="fade-up">
+            <h1>Welkom bij Pepper Lier</h1>
+            <p>Waar gastronomie en sfeer samenkomen.</p>
+            <a asp-page="/Reserveren" class="btn">Reserveer Nu</a>
+        </div>
+    </div>
+</section>
+
+<!-- Specials -->
+<section class="specials" data-aos="fade-up">
+    <div class="specials-grid">
+        <div class="special-item">
+            <img src="https://sktperfectdemo.com/demos/bistro/wp-content/uploads/2018/03/icon1.png" alt="Eten icoon" />
+            <h3>Eten</h3>
+            <div class="divider"></div>
+            <p>Authentieke Turkse gerechten in Lier <br />Since 1997.</p>
+        </div>
+        <div class="special-item">
+            <img src="https://sktperfectdemo.com/demos/bistro/wp-content/uploads/2018/03/icon2.png" alt="Dessert icoon" />
+            <h3>Desserts</h3>
+            <div class="divider"></div>
+            <p>Baklava, Künefe en andere lekkernijen<br />uit de Turkse en Belgische keuken.</p>
+        </div>
+        <div class="special-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/3075/3075975.png" alt="Drinken icoon" />
+            <h3>Drinken</h3>
+            <div class="divider"></div>
+            <p>Frisdranken, warme dranken, bier, cocktails<br />en wijnen.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Gallery -->
+<section class="gallery-strip" data-aos="fade-left">
+    <div class="gallery-marquee">
+        <div class="track">
+            <!-- your images unchanged -->
+            <img src="images/img16.JPG" alt="Gallery 34">
+            <img src="images/img15.JPG" alt="Gallery 20">
+            <img src="images/img20.jpg" alt="Gallery 3">
+            <img src="images/img12.JPG" alt="Gallery 4">
+            <img src="images/img13.JPG" alt="Gallery 9">
+            <img src="images/img7.JPG" alt="Gallery 12">
+            <img src="images/foto6.jpg" alt="Gallery 11">
+            <img src="images/foto17.jpg" alt="Gallery 23">
+            <img src="images/img22.jpg" alt="Gallery 10">
+            <img src="images/foto10.jpg" alt="Gallery 35">
+            <img src="images/foto11.jpg" alt="Gallery 38">
+            <img src="images/foto12.jpg" alt="Gallery 60">
+            <img src="images/dishes10.png" alt="Gallery 7">
+            <img src="images/img85.JPG" alt="Gallery 15">
+            <img src="images/img91.JPG" alt="Gallery 16">
+
+            <img src="images/kucuk.png" alt="Gallery 1">
+            <img src="images/doner1.png" alt="Gallery 2">
+            <img src="images/doner2.png" alt="Gallery 3">
+            <img src="images/doner3.png" alt="Gallery 62">
+            <img src="images/foto9.jpg" alt="Gallery 5">
+            <img src="images/foto8.jpg" alt="Gallery 6">
+            <img src="images/foto4.jpg" alt="Gallery 10">
+
+            <img src="images/foto15.jpg" alt="Gallery 30">
+            <img src="images/doner4.jpg" alt="Gallery 70">
+            <img src="images/kucuk.png" alt="Gallery 61">
+            <img src="images/doner5.jpg" alt="Gallery 32">
+            <img src="images/tatli2.png" alt="Gallery 8">
+            <img src="images/tatli3.png" alt="Gallery 13">
+            <img src="images/tatli4.png" alt="Gallery 14">
+            <img src="images/foto20.jpg" alt="Gallery 36">
+            <img src="images/tatli4.png" alt="Gallery 81">
+            <img src="images/foto21.jpg" alt="Gallery 21">
+            <img src="images/foto18.jpg" alt="Gallery 18">
+            <img src="images/tatli1.png" alt="Gallery 37">
+        </div>
+    </div>
+</section>
+
+<!-- Reservation CTA -->
+<section class="cta" data-aos="zoom-in">
+    <h2>Klaar om te reserveren?</h2>
+    <a asp-page="/Reserveren" class="btn">Boek een tafel</a>
+</section>
+
+@section Scripts {
+    <!-- AOS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>AOS.init();</script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const imgs = document.querySelectorAll('.gallery-marquee img');
+            const box = document.createElement('div');
+            box.className = 'lightbox';
+            const big = document.createElement('img');
+            box.appendChild(big);
+            document.body.appendChild(box);
+
+            imgs.forEach(i => i.addEventListener('click', () => {
+                big.src = i.src;
+                box.classList.add('active');
+            }));
+            box.addEventListener('click', () => box.classList.remove('active'));
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.gallery-strip img').forEach(img => {
+                img.addEventListener('error', () => img.remove());
+            });
+        });
+    </script>
+}

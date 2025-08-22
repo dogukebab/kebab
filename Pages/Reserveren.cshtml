@@ -1,0 +1,168 @@
+﻿@page
+@model MySite.Web.Pages.ReserverenModel
+@{
+    ViewData["Title"] = "Reserveren";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/reserveren.css" asp-append-version="true" /> }
+<section class="reserveren-hero">
+    <div class="hero-overlay">
+        <div class="hero-content" data-aos="fade-up">
+            <h1>Reserveer uw tafel</h1>
+            <p>Ervaar gastronomie in stijl — binnen of in onze tuin</p>
+
+            <!-- CTA scroll to form -->
+            <a href="#reserve" class="cta-scroll">Reserveer direct</a>
+            <span class="scroll-chevron" aria-hidden="true"></span>
+        </div>
+    </div>
+</section>
+
+<!-- ✅ FORMULIER -->
+<section id="reserve" class="reserveren-form-section" data-aos="fade-up" data-aos-delay="100">
+    <div class="form-wrapper">
+        <h2>Uw reservatie</h2>
+
+        <form class="reserveren-form" id="reserveringsForm" action="https://api.web3forms.com/submit" method="POST">
+            <!-- Web3Forms required -->
+            <input type="hidden" name="access_key" value="98a9c2d1-69b6-4d3b-912b-7f3436303fc0" />
+            <input type="hidden" name="subject" value="Nieuwe reservering via website" />
+            <input type="hidden" name="from_name" value="Reserveren Formulier" />
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="naam">Naam</label>
+                    <input type="text" id="naam" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="telefoon">Telefoon</label>
+                    <input type="tel" id="telefoon" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="datum">Datum</label>
+                    <input type="date" id="datum" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="tijd">Tijd</label>
+                    <input type="time" id="tijd" name="time" required>
+                </div>
+                <div class="form-group">
+                    <label for="personen">Aantal personen</label>
+                    <input type="number" id="personen" name="guests" min="1" max="20" required>
+                </div>
+                <div class="form-group">
+                    <label for="locatie">Locatie</label>
+                    <select id="locatie" name="location" required>
+                        <option value="">Selecteer</option>
+                        <option value="Binnen">Binnen</option>
+                        <option value="Tuin">Tuin (gesloten in de winter)</option>
+                    </select>
+                    <small class="note">* De tuin is gesloten tussen november en maart.</small>
+                </div>
+                <div class="form-group full">
+                    <label for="opmerkingen">Opmerkingen</label>
+                    <textarea id="opmerkingen" name="note" rows="3" placeholder="Dieetwensen, speciale gelegenheid, ..."></textarea>
+                </div>
+            </div>
+
+            <!-- Honeypot anti-spam -->
+            <input type="checkbox" name="botcheck" style="display:none!important" tabindex="-1" autocomplete="off">
+
+            <button type="submit" class="btn-reserveer">Reserveer Nu</button>
+            <p id="reserveStatus" class="status" hidden></p>
+        </form>
+    </div>
+</section>
+
+<!-- ✅ EVENEMENTEN PROMOTIE -->
+<section class="evenementen-section" data-aos="zoom-in">
+    <div class="evenementen-content">
+        <h2>Groepen & Evenementen</h2>
+        <p>Organiseer uw verjaardag, jubileum of bedrijfsevenement in een stijlvolle setting. Gepersonaliseerde arrangementen beschikbaar.</p>
+        <a href="contact.html" class="btn-secondary">Contacteer ons voor info</a>
+    </div>
+</section>
+
+
+<!-- ✅ POPUP -->
+<div class="popup-overlay" id="popup">
+    <div class="popup-box">
+        <h3>Dank u!</h3>
+        <p>Uw reservatie is ontvangen. We nemen spoedig contact met u op.</p>
+        <button onclick="closePopup()">Sluiten</button>
+    </div>
+</div>
+
+<!-- ✅ SCRIPTS -->
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script>
+    AOS.init();
+
+    const form = document.getElementById('reserveringsForm');
+    const popup = document.getElementById('popup');
+    const status = document.getElementById('reserveStatus');
+    const locEl = document.getElementById('locatie');
+    const dateEl = document.getElementById('datum');
+
+    // Winter check: Nov–Mar
+    function isWinter(dateStr) {
+        if (!dateStr) return false;
+        const d = new Date(dateStr + "T00:00:00");
+        const m = d.getMonth() + 1; // 1..12
+        return (m === 11 || m === 12 || m === 1 || m === 2 || m === 3);
+    }
+    function validateGarden() {
+        if (locEl.value === 'Tuin' && isWinter(dateEl.value)) {
+            status.hidden = false;
+            status.textContent = 'De tuin is gesloten tussen november en maart. Kies "Binnen" of een andere datum.';
+            return false;
+        }
+        status.hidden = true;
+        status.textContent = '';
+        return true;
+    }
+    locEl.addEventListener('change', validateGarden);
+    dateEl.addEventListener('change', validateGarden);
+
+    // Submit to Web3Forms without leaving the page
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!validateGarden()) return;
+
+        const formData = new FormData(form);
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body: formData
+            });
+            const out = await res.json();
+            if (out.success) {
+                popup.classList.add('active');
+                form.reset();
+                status.hidden = true;
+                status.textContent = '';
+            } else {
+                status.hidden = false;
+                status.textContent = 'Verzenden mislukt. Probeer opnieuw.';
+            }
+        } catch {
+            status.hidden = false;
+            status.textContent = 'Netwerkfout. Controleer uw verbinding en probeer opnieuw.';
+        }
+    });
+
+    // popup close
+    function closePopup() { popup.classList.remove('active'); }
+    window.closePopup = closePopup;
+
+    // After clicking "Reserveer direct", focus the first field when we arrive
+    document.querySelector('.cta-scroll')?.addEventListener('click', () => {
+        setTimeout(() => document.getElementById('naam')?.focus(), 600);
+    });
+</script>
+}

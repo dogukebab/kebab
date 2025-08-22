@@ -1,0 +1,348 @@
+@section Styles {
+    <link rel="stylesheet" href="~/css/reserveren.css" asp-append-version="true" />
+}
+
+/* ===========================
+   Reserveren – ONE SCROLL, MOBILE SAFE
+   =========================== */
+
+/* ---------- THEME ---------- */
+:root {
+    --gold: #d4af37;
+    --gold-light: #f5e9c9;
+    --text-color: #1e1e1e;
+    --bg-overlay: rgba(255,255,255,.85);
+    --btn-dark: #8b6f1c;
+    --popup-bg: #fffdf5;
+    --nav-h: 76px;
+}
+
+/* ---------- BASE: single vertical scroll ---------- */
+html {
+    height: 100%;
+    overflow-y: auto;
+}
+/* sadece html kaydırır */
+body {
+    min-height: 100%;
+    overflow-y: visible;
+    overflow-x: hidden;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+    background: #fdfaf5 url('https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat; /* fixed DEĞİL */
+    color: var(--text-color);
+}
+
+.navbar {
+    z-index: 4000 !important;
+}
+
+/* Emniyet: ana bloklar iç scroll üretmesin */
+.reserveren-hero,
+.hero-overlay,
+.reserveren-form-section,
+.evenementen-section {
+    overflow: visible;
+}
+
+/* ---------- HERO ---------- */
+.reserveren-hero {
+    position: relative;
+    background: url('https://images.unsplash.com/photo-1600891964509-0c9f98b9d232?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
+    overflow: hidden;
+}
+
+/* Masaüstü: header yüksekliğini düşerek hesapla → taşma/ikinci scroll olmaz */
+@media (min-width: 861px) {
+    .reserveren-hero {
+        height: calc(100vh - var(--nav-h));
+        min-height: calc(560px - var(--nav-h));
+    }
+}
+
+/* Mobil: gerçek tam ekran */
+@media (max-width: 860px) {
+    .reserveren-hero {
+        height: 100svh;
+        min-height: 100svh;
+    }
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,.55) 0%, rgba(0,0,0,.45) 45%, rgba(0,0,0,.33) 80%, rgba(0,0,0,.22) 100%);
+}
+
+.hero-content {
+    color: #fff;
+    padding: 2rem;
+    max-width: 1000px;
+    z-index: 1;
+}
+
+    .hero-content h1 {
+        font-family: 'Playfair Display',serif;
+        font-size: clamp(2.6rem, 6vw, 4.6rem);
+        margin: 0 0 .6rem;
+        text-shadow: 0 2px 12px rgba(0,0,0,.45);
+    }
+
+    .hero-content p {
+        font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+        font-weight: 300;
+        margin: .3rem 0 1.4rem;
+        opacity: .95;
+    }
+
+/* CTA */
+.cta-scroll {
+    display: inline-block;
+    background: linear-gradient(180deg,#e6d386,#caa94b);
+    color: #1e1e1e;
+    font-weight: 700;
+    text-decoration: none;
+    padding: .9rem 1.45rem;
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.35);
+    transition: transform .15s, box-shadow .2s;
+}
+
+    .cta-scroll:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.45);
+    }
+
+.scroll-chevron {
+    width: 16px;
+    height: 16px;
+    margin: 10px auto 0;
+    border-right: 2px solid rgba(255,255,255,.9);
+    border-bottom: 2px solid rgba(255,255,255,.9);
+    transform: rotate(45deg);
+    animation: chevron 1.8s infinite;
+    opacity: .9;
+}
+
+@keyframes chevron {
+    0% {
+        transform: translateY(0) rotate(45deg);
+        opacity: .9
+    }
+
+    50% {
+        transform: translateY(6px) rotate(45deg);
+        opacity: .5
+    }
+
+    100% {
+        transform: translateY(0) rotate(45deg);
+        opacity: .9
+    }
+}
+
+/* ---------- FORM SECTION (bindirmesiz, iç scroll yok) ---------- */
+.reserveren-form-section {
+    background: var(--bg-overlay);
+    padding: clamp(2.5rem, 4vw, 4rem) 1.5rem;
+    max-width: 1000px;
+    margin: 0 auto; /* negatif margin YOK */
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.08);
+    scroll-margin-top: var(--nav-h);
+}
+
+.form-wrapper h2 {
+    font-family: 'Playfair Display',serif;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.reserveren-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+    .form-group label {
+        margin-bottom: .5rem;
+        font-weight: 500;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+        padding: .75rem 1rem;
+        border: 1px solid #d3c5a0;
+        border-radius: 6px;
+        font-size: 1rem;
+        background: #fffdf9;
+    }
+
+.note {
+    font-size: .85rem;
+    color: #666;
+    margin-top: .3rem;
+}
+
+.form-group.full {
+    grid-column: 1/-1;
+}
+
+.btn-reserveer {
+    background: var(--btn-dark);
+    color: #fff;
+    padding: .9rem 2rem;
+    font-size: 1.1rem;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .3s;
+    align-self: center;
+}
+
+    .btn-reserveer:hover {
+        background: #a1802e;
+    }
+
+/* ---------- PROMOTIES ---------- */
+.evenementen-section {
+    background: var(--bg-overlay);
+    margin: 4rem auto;
+    padding: 3rem 2rem;
+    max-width: 900px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.07);
+    text-align: center;
+}
+
+.evenementen-content h2 {
+    font-family: 'Playfair Display',serif;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.evenementen-content p {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 2px solid var(--btn-dark);
+    color: var(--btn-dark);
+    padding: .7rem 1.4rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all .3s ease;
+}
+
+    .btn-secondary:hover {
+        background: var(--btn-dark);
+        color: #fff;
+    }
+
+/* ---------- PROMO BANNER ---------- */
+.promo-banner {
+    background: var(--gold-light);
+    text-align: center;
+    padding: 1.2rem;
+    font-weight: 500;
+    font-size: 1rem;
+    margin-bottom: 3rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+/* ---------- POPUP ---------- */
+.popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+}
+
+    .popup-overlay.active {
+        display: flex;
+    }
+
+.popup-box {
+    background: var(--popup-bg);
+    padding: 2rem 2.5rem;
+    border-radius: 10px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+
+    .popup-box h3 {
+        font-family: 'Playfair Display',serif;
+        font-size: 1.6rem;
+        margin-bottom: 1rem;
+        color: var(--btn-dark);
+    }
+
+    .popup-box button {
+        margin-top: 1rem;
+        padding: .7rem 1.2rem;
+        background: var(--btn-dark);
+        color: #fff;
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+/* ---------- MOBILE TWEAKS ---------- */
+@media (max-width: 860px) {
+    /* Hero üzerindeyken hamburger & marka görünür */
+    body:not(.nav-solid) .menu-toggle {
+        color: var(--gold) !important;
+        text-shadow: 0 0 2px rgba(0,0,0,.55), 0 0 8px rgba(0,0,0,.35);
+    }
+
+    body.nav-solid .menu-toggle {
+        color: var(--text-color) !important;
+        text-shadow: none;
+    }
+
+    body:not(.nav-solid) .brand-text {
+        color: #fff !important;
+        text-shadow: 0 1px 3px rgba(0,0,0,.55);
+    }
+
+    body.nav-solid .brand-text {
+        color: var(--text-color) !important;
+        text-shadow: none;
+    }
+
+    .hero-content h1 {
+        font-size: clamp(2rem, 7vw, 2.6rem);
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
