@@ -1,3 +1,4 @@
+// wwwroot/js/chatwidget.js
 (() => {
     const el = (id) => document.getElementById(id);
     const widget = el("chat-widget");
@@ -15,32 +16,41 @@
     let unread = 0, connected = false;
     const seen = new Set();
 
+    // --- Always scroll the messages container to bottom (safe with RAF)
+    const scrollToBottom = () => {
+        if (!list) return;
+        requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
+    };
+
     const updateBadge = () => {
         if (!badge || !panel) return;
         badge.textContent = unread > 99 ? "99+" : String(unread);
         badge.hidden = !(panel.hidden && unread > 0);
     };
 
-    // 🔧 Force show/hide regardless of global CSS
+    // Open/close helpers (force display to avoid global CSS overrides)
     const open = () => {
         if (!panel) return;
-        panel.hidden = false;                 // removes [hidden]
-        panel.style.display = "block";        // override any stylesheet that sets display:none
+        panel.hidden = false;
+        panel.style.display = "block";
         toggle?.setAttribute("aria-expanded", "true");
         unread = 0;
         updateBadge();
-        setTimeout(() => input?.focus(), 0);
+        setTimeout(() => {
+            input?.focus();
+            scrollToBottom();           // <<< en alta in
+        }, 0);
     };
 
     const close = () => {
         if (!panel) return;
-        panel.hidden = true;                  // adds [hidden]
-        panel.style.display = "none";         // ensure it disappears
+        panel.hidden = true;
+        panel.style.display = "none";
         toggle?.setAttribute("aria-expanded", "false");
         updateBadge();
     };
 
-    // Ensure initial state matches markup
+    // Ensure initial closed state matches markup
     if (panel) {
         if (panel.hidden) panel.style.display = "none";
         else close();
@@ -53,18 +63,19 @@
         (panel?.hidden ? open() : close());
     });
 
-    // Close (X)
+    // Close with X
     closeB?.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         close();
     });
 
-    // Esc closes
+    // Close with ESC
     document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && panel && !panel.hidden) close();
     });
 
+    // Append a message bubble
     const add = (from, text, msgId, ts) => {
         if (!list) return;
         if (msgId && seen.has(msgId)) return;
@@ -85,11 +96,14 @@
 
         wrap.append(t, m);
         list.appendChild(wrap);
-        list.scrollTop = list.scrollHeight;
+
+        // <<< mesaj geldikten sonra her zaman en alta kaydır
+        scrollToBottom();
 
         if (from !== "You" && panel?.hidden) { unread++; updateBadge(); }
     };
 
+    // ----- SignalR -----
     const connection = new signalR.HubConnectionBuilder()
         .withUrl("/chatHub")
         .withAutomaticReconnect()
@@ -98,7 +112,7 @@
     connection.onreconnecting(() => console.warn("[chat] reconnecting…"));
     connection.onreconnected(() => console.info("[chat] reconnected"));
 
-    // avoid double-binding
+    // avoid double binding during hot reloads
     connection.off("ReceiveToGuest");
     connection.off("MessageDeleted");
     connection.off("ChatCleared");
@@ -108,6 +122,7 @@
 
     connection.on("MessageDeleted", (_chatId, messageId) => {
         document.querySelector(`[data-id='${messageId}']`)?.remove();
+        scrollToBottom();
     });
 
     connection.on("ChatCleared", (_chatId) => {
@@ -115,6 +130,7 @@
         seen.clear();
         unread = 0;
         updateBadge();
+        scrollToBottom();
     });
 
     connection.on("AdminOnline", (count) => {
@@ -128,14 +144,17 @@
         .then(() => { connected = true; })
         .catch(err => console.error("[chat] start error", err));
 
+    // send message
     form?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const msg = (input?.value || "").trim();
         if (!msg) return;
         if (!connected) { console.warn("[chat] not connected yet"); return; }
         try {
-            await connection.invoke("SendFromGuest", msg);
+            await connection.invoke("SendFromGuest", msg); // server echo
             if (input) { input.value = ""; input.focus(); }
+            // yazdıktan sonra da en alta
+            scrollToBottom();
         } catch (err) { console.error("[chat] send error", err); }
     });
 

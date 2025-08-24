@@ -7,6 +7,7 @@
 <h2>Admin Chat Panel</h2>
 
 <style>
+    /* ---------- Layout & lists (your styles kept) ---------- */
     .admin-wrap {
         display: grid;
         grid-template-columns: 260px 1fr;
@@ -72,8 +73,9 @@
         border-radius: 10px;
         box-shadow: 0 2px 6px rgba(0,0,0,.06);
         display: grid;
-        grid-template-rows: auto auto 1fr auto;
-        gap: 8px
+        grid-template-rows: auto auto minmax(0,1fr) auto; /* header | actions | messages | reply */
+        height: calc(100vh - 180px);
+        max-height: calc(100vh - 180px);
     }
 
     .chat-header {
@@ -90,11 +92,11 @@
     }
 
     .chat-messages {
-        height: 420px;
         overflow: auto;
+        min-height: 0;
         background: #f8f6f0;
         padding: 10px;
-        border-radius: 8px
+        border-radius: 8px;
     }
 
     .bubble {
@@ -187,6 +189,15 @@
             <a id="exportJson" class="link-btn" href="#" target="_blank" rel="noopener">Export JSON</a>
             <a id="exportCsv" class="link-btn" href="#" target="_blank" rel="noopener">Export CSV</a>
             <button id="clearChat" class="link-btn" type="button" style="background:#ffe5e5">Clear chat</button>
+
+            <!-- Sound + mute toggle -->
+            <audio id="ding" preload="auto">
+                <!-- Dosyanız gerçekten varsa: wwwroot/sounds/notifyu.ogg -->
+                <source src="@Url.Content("~/sounds/notifyu.ogg")" type="audio/ogg" />
+                <!-- İleride mp3 eklerseniz: -->
+                <!-- <source src="@Url.Content("~/sounds/notifyu.mp3")" type="audio/mpeg" /> -->
+            </audio>
+            <button id="muteToggle" class="link-btn" type="button">🔔 Sound on</button>
         </div>
 
         <div id="adminMessages" class="chat-messages"></div>
@@ -213,14 +224,45 @@
             const adminOnlineBadge = document.getElementById("adminOnlineBadge");
             const clearBtn = document.getElementById("clearChat");
 
+            // ------- Sound (robust) -------
+            const ding = document.getElementById("ding");
+            const muteToggle = document.getElementById("muteToggle");
+            const MUTE_KEY = "adminSoundMuted";
+            let muted = localStorage.getItem(MUTE_KEY) === "1";
+
+            if (ding) { ding.volume = 0.6; ding.load(); }
+
+            function updateMuteBtn() { muteToggle.textContent = muted ? "🔕 Sound off" : "🔔 Sound on"; }
+            function playDing() {
+                if (muted || !ding) return;
+                try { ding.currentTime = 0; ding.play().catch(() => { }); } catch { }
+            }
+            // Autoplay kilidi: ilk kullanıcı etkileşiminde sesi “unlock” et
+            function unlockAudio() {
+                if (!ding) return;
+                ding.muted = false;
+                const p = ding.play();
+                if (p && p.then) p.then(() => ding.pause()).catch(() => { });
+            }
+            document.addEventListener("pointerdown", unlockAudio, { once: true });
+            muteToggle?.addEventListener("click", unlockAudio, { once: true });
+
+            if (muteToggle) {
+                updateMuteBtn();
+                muteToggle.onclick = () => {
+                    muted = !muted;
+                    localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
+                    updateMuteBtn();
+                };
+            }
+
             // ------- State -------
             const guests = new Map(); // id -> { label }
-            const logs = new Map(); // id -> [bubble elements]
+            const logs = new Map();   // id -> [bubble elements]
             const unread = new Map(); // id -> number
-            const lastTs = new Map(); // id -> number (for sorting)
+            const lastTs = new Map(); // id -> number
             let selected = null;
 
-            // ------- Helpers -------
             const getUnread = id => unread.get(id) || 0;
             const bumpUnread = id => unread.set(id, getUnread(id) + 1);
             const markRead = id => unread.set(id, 0);
@@ -237,12 +279,11 @@
             }
 
             function renderGuests() {
-                // build a sorted array: unread first, then by lastTs desc
-                const items = [...guests.entries()].map(([id, g]) => {
-                    return { id, label: g.label, u: getUnread(id), ts: lastTs.get(id) || 0 };
-                }).sort((a, b) => {
-                    if ((b.u > 0) !== (a.u > 0)) return b.u - a.u;      // unread chats on top
-                    return (b.ts || 0) - (a.ts || 0);                   // then most recent
+                const items = [...guests.entries()].map(([id, g]) => ({
+                    id, label: g.label, u: getUnread(id), ts: lastTs.get(id) || 0
+                })).sort((a, b) => {
+                    if ((b.u > 0) !== (a.u > 0)) return b.u - a.u;
+                    return (b.ts || 0) - (a.ts || 0);
                 });
 
                 guestListEl.innerHTML = "";
@@ -255,7 +296,6 @@
                     const label = document.createElement("span");
                     label.className = "label";
                     label.textContent = `${it.label} (${it.id.slice(-4).toUpperCase()})`;
-
                     li.appendChild(label);
 
                     if (it.u > 0) {
@@ -265,7 +305,6 @@
                         badge.title = `${it.u} unread`;
                         li.appendChild(badge);
                     }
-
                     li.onclick = () => selectGuest(it.id);
                     guestListEl.appendChild(li);
                 }
@@ -282,7 +321,7 @@
                 sendBtn.disabled = false;
                 inputEl.focus();
                 updateExportLinks();
-                renderGuests(); // refresh badges
+                renderGuests();
             }
 
             const makeDeleteBtn = (messageId) => {
@@ -299,15 +338,12 @@
                 return btn;
             };
 
-            // senderLabel in meta; 'mine' styles current admin's own messages
             const pushBubble = (chatId, senderLabel, text, mine, messageId, ts) => {
                 const b = document.createElement("div");
                 b.className = "bubble " + (mine ? "me" : "them");
                 if (messageId) b.dataset.id = messageId;
 
-                const t = document.createElement("div");
-                t.textContent = text;
-
+                const t = document.createElement("div"); t.textContent = text;
                 const m = document.createElement("div");
                 m.className = "meta";
                 const time = ts ? new Date(ts) : new Date();
@@ -333,17 +369,13 @@
 
             conn.on("GuestJoined", (id, label) => {
                 guests.set(id, { label });
-                // initialize sort meta
                 if (!lastTs.has(id)) lastTs.set(id, 0);
                 renderGuests();
                 if (!selected) selectGuest(id);
             });
 
             conn.on("GuestLeft", (id) => {
-                guests.delete(id);
-                logs.delete(id);
-                unread.delete(id);
-                lastTs.delete(id);
+                guests.delete(id); logs.delete(id); unread.delete(id); lastTs.delete(id);
                 if (selected === id) {
                     selected = null;
                     messagesEl.innerHTML = "";
@@ -354,7 +386,6 @@
                 renderGuests();
             });
 
-            // IMPORTANT: Hub should echo admin's own send as label "You"
             conn.on("ReceiveFromGuest", (id, label, message, msgId, ts) => {
                 if (!guests.has(id)) { guests.set(id, { label }); }
                 lastTs.set(id, ts || Date.now());
@@ -362,15 +393,11 @@
                 const mine = (label === "You");
                 pushBubble(id, label, message, mine, msgId, ts);
 
-                // unread logic
-                if (selected !== id) {
-                    bumpUnread(id);
-                } else {
-                    markRead(id);
-                }
+                if (selected !== id) bumpUnread(id); else markRead(id);
                 renderGuests();
 
-                // auto-select first guest if none selected yet
+                if (!mine) playDing();   // <-- ses burada
+
                 if (!selected) selectGuest(id);
             });
 
@@ -404,7 +431,6 @@
                 if (!msg || !selected) return;
                 try {
                     await conn.invoke("SendFromAdmin", selected, msg);
-                    // Hub echoes back to THIS admin with label "You"
                     inputEl.value = "";
                     inputEl.focus();
                 } catch (e) { console.error(e); }
@@ -418,10 +444,7 @@
             };
 
             inputEl.addEventListener("keydown", e => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendBtn.click();
-                }
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendBtn.click(); }
             });
         })();
     </script>

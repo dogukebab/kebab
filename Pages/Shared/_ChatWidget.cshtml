@@ -2,21 +2,13 @@
 <div id="chat-widget" class="chat-widget" aria-live="polite">
     <div id="chat-status" class="chat-status">Support: checking…</div>
 
-    <button id="chat-toggle"
-            class="chat-toggle"
-            aria-expanded="false"
-            aria-controls="chat-panel"
-            title="Chat met ons">
-        💬 Chat
-        <span id="chat-unread" class="badge" hidden>0</span>
+    <button id="chat-toggle" class="chat-toggle" aria-expanded="false"
+            aria-controls="chat-panel" title="Chat met ons">
+        💬 Chat <span id="chat-unread" class="badge" hidden>0</span>
     </button>
 
-    <section id="chat-panel"
-             class="chat-panel"
-             role="dialog"
-             aria-label="Live Chat"
-             aria-modal="false"
-             hidden>
+    <section id="chat-panel" class="chat-panel" role="dialog"
+             aria-label="Live Chat" aria-modal="false" hidden>
         <header class="chat-header">
             <div class="chat-title">Pepper Lier — Support</div>
             <button id="chat-close" class="chat-close" type="button" aria-label="Close">×</button>
@@ -33,8 +25,105 @@
 </div>
 
 <style>
-    /* Ensure hidden really hides */
+    /* Put the whole widget on top-right of the page */
+    #chat-widget {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 9999;
+    }
+
+    /* Really hide when [hidden] */
     #chat-panel[hidden] {
         display: none !important;
     }
+
+    /* Panel: header | messages (flex) | form (pinned) */
+    #chat-panel {
+        width: min(92vw, 420px);
+        height: clamp(420px, 70vh, 640px);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.18);
+        padding: 12px;
+    }
+
+    .chat-header {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* IMPORTANT: only messages scroll; kill any global fixed height */
+    #chat-widget .chat-messages {
+        flex: 1 1 auto !important;
+        min-height: 0 !important; /* lets flex child shrink */
+        height: auto !important; /* override any global height */
+        overflow-y: auto !important;
+        background: #f8f6f0;
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    /* Input stays pinned at bottom, even if more bubbles arrive */
+    #chat-widget .chat-form {
+        flex: 0 0 auto;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+        position: sticky; /* extra safety */
+        bottom: 0;
+        background: #fff;
+    }
+
+
+
+    /* panel sütun düzeni: başlık | mesajlar | form */
+    #chat-panel {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* mesaj alanı esnesin ve scroll olsun */
+    #chat-widget .chat-messages {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+    }
+
+    /* form sabit yükseklik, altta kalsın */
+    #chat-widget .chat-form {
+        flex: 0 0 auto;
+    }
+
+
+
+    /* Panel, sabit bir yükseklikte kolon düzeninde olmalı */
+    #chat-panel {
+        /* paneli sabitleyen veya konumlandıran kendi kurallarınız varsa kalsın */
+        display: flex !important;
+        flex-direction: column !important;
+        /* panel ekran dışına taşmasın; yüksekliği sabitle */
+        height: 72vh; /* panel yüksekliği */
+        max-height: calc(100vh - 120px); /* emniyet payı */
+        width: min(440px, 94vw); /* mobilde taşmaması için */
+    }
+
+    /* Mesaj bölmesi esneyip içinde scroll etsin */
+    #chat-widget .chat-messages {
+        flex: 1 1 auto !important;
+        min-height: 0 !important; /* flex çocuklarında gerekli */
+        overflow-y: auto !important;
+    }
+
+    /* Form sabit yükseklikte, altta kalsın */
+    #chat-widget .chat-form {
+        flex: 0 0 auto !important;
+    }
+
 </style>
