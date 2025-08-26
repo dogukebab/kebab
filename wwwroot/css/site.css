@@ -967,7 +967,66 @@ img {
 /* optional: prevent background page from scrolling when chat is open */
 body.chat-open{
   overflow: hidden;
+}  
+
+
+
+
+/* ===================== CHAT (mobile-safe, fixed, isolated) ===================== */
+/* Put this at the very bottom of site.css */
+:root { --chat-pad: 18px; }
+
+/* Support both id and class, and override earlier rules safely */
+#chat-widget,
+.chat-widget {
+  position: fixed !important;
+  right: max(var(--chat-pad), env(safe-area-inset-right)) !important;
+  bottom: max(var(--chat-pad), env(safe-area-inset-bottom)) !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+
+  z-index: 5000 !important;
+  isolation: isolate;              /* own stacking context */
+  contain: layout paint style;     /* isolate layout & paint */
+  pointer-events: none;            /* wrapper doesn't block page taps */
 }
+
+/* Only inner elements should receive pointer events */
+#chat-toggle, .chat-toggle,
+#chat-panel,  .chat-panel {
+  pointer-events: auto;
+}
+
+/* Panel sizing: fits phones, stays inside viewport, no horizontal push */
+#chat-panel,
+.chat-panel {
+  width: min(360px, calc(100vw - (var(--chat-pad) * 2))) !important;
+  height: auto !important;
+  max-height: calc(100svh - (var(--chat-pad) * 2) - 60px) !important; /* header + spacing */
+  margin-top: 12px !important;
+  /* keep your existing radius/shadow/colors */
+}
+
+@supports (height: 100dvh) {
+  #chat-panel,
+  .chat-panel {
+    max-height: calc(100dvh - (var(--chat-pad) * 2) - 60px) !important;
+  }
+}
+
+/* Ensure closed == gone (some browsers keep a 0px box otherwise) */
+#chat-panel[hidden],
+.chat-panel[hidden] {
+  display: none !important;
+}
+
+/* Optional: stop background scroll-jumps when chat is open */
+body.chat-open { overflow: hidden; }
+
+/* Avoid rubber-band scroll moving layout while using the chat */
+html, body { overscroll-behavior: contain; }
+
 
 /* already good, keep this to ensure closed state truly removes it from flow */
 #chat-panel[hidden]{ display: none !important; }
