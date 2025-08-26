@@ -786,248 +786,65 @@ img {
     }
 }
 
-/* ===== Floating Chat (bottom-right) ===== */
-/* ===== Floating Chat (bottom-right) ===== */
-.chat-widget {
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    z-index: 5000;
-    font-family: inherit;
-}
 
-.chat-toggle {
-    appearance: none;
-    border: 0;
-    cursor: pointer;
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: linear-gradient(180deg,#e6d386,#caa94b);
-    color: #1e1e1e;
-    font-weight: 700;
-    box-shadow: 0 10px 22px rgba(0,0,0,.18);
-}
-
-    .chat-toggle .badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 18px;
-        height: 18px;
-        background: #c62828;
-        color: #fff;
-        border-radius: 9px;
-        font-size: 11px;
-        margin-left: 8px;
-        padding: 0 6px;
-    }
-
-.chat-panel {
-    width: min(92vw, 360px);
-    height: 440px;
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0,0,0,.22);
-    overflow: hidden;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    margin-top: 12px;
-}
-
-.chat-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #1f1f1f;
-    color: #fff;
-    padding: 10px 12px;
-}
-
-.chat-title {
-    font-weight: 700;
-}
-
-.chat-close {
-    background: transparent;
-    color: #fff;
-    border: 0;
-    font-size: 20px;
-    cursor: pointer;
-}
-
-.chat-messages {
-    padding: 12px;
-    overflow: auto;
-    background: #f8f6f0;
-}
-
-/* bubbles */
-.bubble {
-    max-width: 80%;
-    padding: 8px 10px;
-    margin: 8px 0;
-    border-radius: 14px;
-    background: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,.06);
-}
-
-    .bubble.mine {
-        margin-left: auto;
-        background: #ffe7a8;
-    }
-
-    .bubble.theirs {
-        margin-right: auto;
-        background: #fff;
-    }
-
-.bubble-text {
-    font-size: 14px;
-}
-
-.bubble-time {
-    font-size: 11px;
-    opacity: .65;
-    margin-top: 4px;
-    text-align: right;
-}
-
-.chat-form {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    padding: 10px;
-    border-top: 1px solid rgba(0,0,0,.06);
-    background: #faf8f3;
-}
-
-.chat-input {
-    border: 1px solid rgba(0,0,0,.2);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 14px;
-}
-
-.chat-send {
-    border: 0;
-    border-radius: 10px;
-    padding: 10px 14px;
-    background: #c62828;
-    color: #fff;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-    .chat-send:hover {
-        filter: brightness(.95);
-    }
-
-@media (max-width: 480px) {
-    .chat-panel {
-        height: 70vh;
-    }
-}
-
-.chat-status {
-    font-size: 12px;
-    opacity: .7
-}
-
-    .chat-status.online {
-        color: #1b5e20;
-        opacity: 1
-    }
-#chat-panel[hidden] {
-    display: none !important;
-}  
-
-
-
-/* ==== Chat: mobile-safe isolation & sizing (append to end of site.css) ==== */
-.chat-widget{
-  /* keep the chat out of page layout flow on mobile */
-  position: fixed;
-  right: max(18px, env(safe-area-inset-right));
-  bottom: max(18px, env(safe-area-inset-bottom));
-  z-index: 5000;
-  isolation: isolate;                /* new stacking context, no bleed */
-  contain: layout paint style;       /* isolate layout/paint */
-}
-
-/* let the panel size itself to the visible viewport on phones */
-.chat-panel{
-  max-height: calc(100svh - 96px);
-}
-@supports (height: 100dvh){
-  .chat-panel{
-    max-height: calc(100dvh - 96px);
-  }
-}
-
-/* optional: prevent background page from scrolling when chat is open */
-body.chat-open{
-  overflow: hidden;
-}  
-
-
-
-
-/* ===================== CHAT (mobile-safe, fixed, isolated) ===================== */
-/* Put this at the very bottom of site.css */
+/* ===== Floating Chat (bottom-right) — fixed, mobile-safe ===== */
 :root { --chat-pad: 18px; }
 
-/* Support both id and class, and override earlier rules safely */
-#chat-widget,
-.chat-widget {
+/* pin the widget; create its own stacking/paint context */
+:is(#chat-widget, .chat-widget) {
   position: fixed !important;
   right: max(var(--chat-pad), env(safe-area-inset-right)) !important;
   bottom: max(var(--chat-pad), env(safe-area-inset-bottom)) !important;
   left: auto !important;
   top: auto !important;
   transform: none !important;
-
   z-index: 5000 !important;
-  isolation: isolate;              /* own stacking context */
-  contain: layout paint style;     /* isolate layout & paint */
-  pointer-events: none;            /* wrapper doesn't block page taps */
+  isolation: isolate;
+  contain: layout paint style;
+  pointer-events: none; /* wrapper doesn't block page taps */
 }
 
-/* Only inner elements should receive pointer events */
-#chat-toggle, .chat-toggle,
-#chat-panel,  .chat-panel {
+/* inner elements should receive pointer events */
+:is(#chat-toggle, .chat-toggle),
+:is(#chat-panel, .chat-panel) {
   pointer-events: auto;
 }
 
-/* Panel sizing: fits phones, stays inside viewport, no horizontal push */
-#chat-panel,
-.chat-panel {
+/* panel sizing that never breaks page layout */
+:is(#chat-panel, .chat-panel) {
+  /* keep your existing background, radius, shadow, grid, etc. */
   width: min(360px, calc(100vw - (var(--chat-pad) * 2))) !important;
-  height: auto !important;
-  max-height: calc(100svh - (var(--chat-pad) * 2) - 60px) !important; /* header + spacing */
-  margin-top: 12px !important;
-  /* keep your existing radius/shadow/colors */
+  height: auto !important;                 /* don't force exact height */
+  max-height: calc(100svh - (var(--chat-pad) * 2) - 56px) !important;
+  margin-top: 12px !important;             /* gap below the toggle */
+  left: auto !important; top: auto !important; right: auto !important; bottom: auto !important;
+  transform: none !important;
+  overflow: hidden;                         /* keeps content inside on iOS */
 }
 
 @supports (height: 100dvh) {
-  #chat-panel,
-  .chat-panel {
-    max-height: calc(100dvh - (var(--chat-pad) * 2) - 60px) !important;
+  :is(#chat-panel, .chat-panel) {
+    max-height: calc(100dvh - (var(--chat-pad) * 2) - 56px) !important;
   }
 }
 
-/* Ensure closed == gone (some browsers keep a 0px box otherwise) */
-#chat-panel[hidden],
-.chat-panel[hidden] {
+/* keep closed state truly removed from flow */
+:is(#chat-panel[hidden], .chat-panel[hidden]) {
   display: none !important;
 }
 
-/* Optional: stop background scroll-jumps when chat is open */
+/* messages scroll smoothly without moving the page */
+:is(#chat-messages, .chat-messages) {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* tiny phones: use full available width inside safe area */
+@media (max-width: 480px) {
+  :is(#chat-panel, .chat-panel) {
+    width: calc(100vw - (var(--chat-pad) * 2)) !important;
+  }
+}
+
+/* optional: if your JS toggles body.chat-open, stop background scrolling */
 body.chat-open { overflow: hidden; }
-
-/* Avoid rubber-band scroll moving layout while using the chat */
-html, body { overscroll-behavior: contain; }
-
-
-/* already good, keep this to ensure closed state truly removes it from flow */
-#chat-panel[hidden]{ display: none !important; }
-
