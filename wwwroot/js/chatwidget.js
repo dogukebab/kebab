@@ -16,7 +16,6 @@
     let unread = 0, connected = false;
     const seen = new Set();
 
-    // --- Always scroll the messages container to bottom (safe with RAF)
     const scrollToBottom = () => {
         if (!list) return;
         requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
@@ -28,54 +27,43 @@
         badge.hidden = !(panel.hidden && unread > 0);
     };
 
-    // Open/close helpers (force display to avoid global CSS overrides)
-    const open = () => {
+    // Open/close without touching page layout
+    function openChat() {
         if (!panel) return;
-        panel.hidden = false;
-        panel.style.display = "block";
+        panel.hidden = false;                       // CSS handles display
+        document.body.classList.add("chat-open");   // lock background scroll
         toggle?.setAttribute("aria-expanded", "true");
-        unread = 0;
-        updateBadge();
-        setTimeout(() => {
-            input?.focus();
-            scrollToBottom();           // <<< en alta in
-        }, 0);
-    };
-
-    const close = () => {
+        unread = 0; updateBadge();
+        requestAnimationFrame(() => { input?.focus(); scrollToBottom(); });
+    }
+    function closeChat() {
         if (!panel) return;
-        panel.hidden = true;
-        panel.style.display = "none";
+        panel.hidden = true;                        // CSS handles display
+        document.body.classList.remove("chat-open");
         toggle?.setAttribute("aria-expanded", "false");
         updateBadge();
-    };
-
-    // Ensure initial closed state matches markup
-    if (panel) {
-        if (panel.hidden) panel.style.display = "none";
-        else close();
     }
 
-    // Toggle
+    // Ensure initial state is closed
+    if (panel && !panel.hidden) closeChat();
+
+    // Toggle button
     toggle?.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        (panel?.hidden ? open() : close());
+        e.preventDefault(); e.stopPropagation();
+        (panel?.hidden ? openChat() : closeChat());
     });
 
     // Close with X
     closeB?.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        close();
+        e.preventDefault(); e.stopPropagation(); closeChat();
     });
 
     // Close with ESC
     document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && panel && !panel.hidden) close();
+        if (e.key === "Escape" && panel && !panel.hidden) closeChat();
     });
 
-    // Append a message bubble
+    // --- Bubbles
     const add = (from, text, msgId, ts) => {
         if (!list) return;
         if (msgId && seen.has(msgId)) return;
@@ -96,8 +84,6 @@
 
         wrap.append(t, m);
         list.appendChild(wrap);
-
-        // <<< mesaj geldikten sonra her zaman en alta kaydır
         scrollToBottom();
 
         if (from !== "You" && panel?.hidden) { unread++; updateBadge(); }
@@ -112,7 +98,6 @@
     connection.onreconnecting(() => console.warn("[chat] reconnecting…"));
     connection.onreconnected(() => console.info("[chat] reconnected"));
 
-    // avoid double binding during hot reloads
     connection.off("ReceiveToGuest");
     connection.off("MessageDeleted");
     connection.off("ChatCleared");
@@ -153,7 +138,6 @@
         try {
             await connection.invoke("SendFromGuest", msg); // server echo
             if (input) { input.value = ""; input.focus(); }
-            // yazdıktan sonra da en alta
             scrollToBottom();
         } catch (err) { console.error("[chat] send error", err); }
     });
