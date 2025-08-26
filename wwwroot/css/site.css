@@ -12,9 +12,11 @@ h1 { font-size: 2rem; margin: 1rem 0; }
     --brand-gold: #bfa06c;
     --nav-h: 76px;
     --marquee-speed: 28s;
-    --hero-cycle: 36s; /* 5 slides → ~7.2s each */
-    /* NEW: visual viewport height fallback (overwritten by JS on iOS) */
-    --vvh: 100dvh;
+    --hero-cycle: 36s;          /* 5 slides → ~7.2s each */
+
+    /* visual-viewport helpers (iOS updated via JS) */
+    --vvh: 100dvh;              /* visible viewport height fallback */
+    --kb: 0px;                  /* keyboard offset for bottom UI */
 }
 
 /* small safe defaults (don’t affect layout) */
@@ -313,15 +315,6 @@ img { max-width: 100%; height: auto; display: block; }
 /* =================================================================== */
 /* =========================  CHAT WIDGET  =========================== */
 /* =================================================================== */
-/* =================================================================== */
-/* =========================  CHAT WIDGET  =========================== */
-/* =================================================================== */
-
-/* Visual viewport + keyboard offset (updated by JS) */
-:root{
-  --vvh: 100dvh; /* visible viewport height fallback */
-  --kb: 0px;     /* keyboard offset */
-}
 
 /* Container (fixed, safe-area aware) */
 .chat-widget{
@@ -350,7 +343,7 @@ img { max-width: 100%; height: auto; display: block; }
   font-size:11px;margin-left:8px;padding:0 6px;
 }
 
-/* Panel: header | messages | form  (only messages scroll) */
+/* Panel: header | messages | form (only messages scroll) */
 .chat-panel{
   width: min(92vw, 360px);
   max-height: calc(var(--vvh) - 96px);
@@ -398,14 +391,10 @@ img { max-width: 100%; height: auto; display: block; }
 /* Truly hide when closed */
 #chat-panel[hidden]{display:none !important;}
 
-/* Lock background while chat is open (we also fix the body position in JS) */
+/* Lock background while chat is open */
 body.chat-open{overflow:hidden;overscroll-behavior:none;}
 
 /* iOS guards */
-html{-webkit-text-size-adjust:100%;}
 @supports (-webkit-touch-callout:none){
   input,textarea,select,button{font-size:16px !important;}
 }
-/* Never allow accidental horizontal scroll */
-html,body{overflow-x:clip;width:100%;}
-
