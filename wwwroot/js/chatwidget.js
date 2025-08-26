@@ -1,35 +1,40 @@
 // wwwroot/js/chatwidget.js
 (() => {
     const el = (id) => document.getElementById(id);
-    const widget = el("chat-widget");
+    const widget   = el("chat-widget");
     if (!widget) return;
 
-    const toggle = el("chat-toggle");
-    const panel  = el("chat-panel");
-    const closeB = el("chat-close");
-    const list   = el("chat-messages");
-    const form   = el("chat-form");
-    const input  = el("chat-input");
-    const badge  = el("chat-unread");
+    const toggle   = el("chat-toggle");
+    const panel    = el("chat-panel");
+    const closeB   = el("chat-close");
+    const list     = el("chat-messages");
+    const form     = el("chat-form");
+    const input    = el("chat-input");
+    const badge    = el("chat-unread");
     const statusEl = el("chat-status");
 
     let unread = 0, connected = false;
     const seen = new Set();
 
-    // --- iOS visual viewport fix (keeps panel above keyboard & widget fixed)
+    // --- iOS visual viewport fix: keep widget anchored and centered
     const applyViewportFix = () => {
         const vv = window.visualViewport;
         const vvh = vv ? vv.height : window.innerHeight;
-        // update CSS var that controls panel max-height
+
+        // update CSS var used by panel max-height
         document.documentElement.style.setProperty("--vvh", `${vvh}px`);
 
-        // if keyboard reduces the visual viewport, push widget up by the overlap
+        // bottom overlap (keyboard height portion)
         let extraBottom = 0;
         if (vv) {
             const overlap = window.innerHeight - (vv.height + vv.offsetTop);
-            if (overlap > 0) extraBottom = overlap; // keyboard height portion
+            if (overlap > 0) extraBottom = overlap;
         }
         widget.style.bottom = `calc(max(18px, env(safe-area-inset-bottom)) + ${extraBottom}px)`;
+
+        // horizontal nudge to cancel iOS's sideways pan when keyboard shows
+        const offsetX = (window.visualViewport?.offsetLeft || 0);
+        widget.style.transform = `translate(${offsetX}px, 0) translateZ(0)`;
     };
 
     const addViewportListeners = () => {
@@ -43,10 +48,19 @@
         window.visualViewport.removeEventListener("resize", applyViewportFix);
         window.visualViewport.removeEventListener("scroll", applyViewportFix);
         document.documentElement.style.removeProperty("--vvh");
-        widget.style.bottom = ""; // back to CSS default
+        widget.style.bottom = "";    // back to CSS default
+        widget.style.transform = ""; // back to CSS default
     };
 
-    // --- Always scroll the messages container to bottom
+    // prevent page from scrolling/jumping while chat is open (but allow inside panel)
+    const blockOutsideTouchScroll = (e) => {
+        if (!panel || panel.hidden) return;
+        if (!panel.contains(e.target)) {
+            e.preventDefault();
+        }
+    };
+
+    // --- Always scroll messages to bottom
     const scrollToBottom = () => {
         if (!list) return;
         requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
@@ -58,30 +72,35 @@
         badge.hidden = !(panel.hidden && unread > 0);
     };
 
-    // Open/close without touching page layout
     function openChat() {
         if (!panel) return;
-        panel.hidden = false;                       // CSS handles display
-        document.body.classList.add("chat-open");   // lock background scroll
+        panel.hidden = false;
+        document.body.classList.add("chat-open");
         toggle?.setAttribute("aria-expanded", "true");
         unread = 0; updateBadge();
         addViewportListeners();
+
+        // block outside scroll on iOS
+        document.addEventListener("touchmove", blockOutsideTouchScroll, { passive: false });
+
         requestAnimationFrame(() => { input?.focus(); scrollToBottom(); });
     }
+
     function closeChat() {
         if (!panel) return;
-        panel.hidden = true;                        // CSS handles display
+        panel.hidden = true;
         document.body.classList.remove("chat-open");
         toggle?.setAttribute("aria-expanded", "false");
         updateBadge();
         removeViewportListeners();
+
+        document.removeEventListener("touchmove", blockOutsideTouchScroll);
     }
 
-    // Ensure initial state is closed
-    if (panel && !panel.hidden) closeChat();
-    else if (panel) panel.hidden = true;
+    // Ensure initial closed state
+    if (panel) panel.hidden = true;
 
-    // Toggle button
+    // Toggle
     toggle?.addEventListener("click", (e) => {
         e.preventDefault(); e.stopPropagation();
         (panel?.hidden ? openChat() : closeChat());
@@ -89,7 +108,8 @@
 
     // Close with X
     closeB?.addEventListener("click", (e) => {
-        e.preventDefault(); e.stopPropagation(); closeChat();
+        e.preventDefault(); e.stopPropagation();
+        closeChat();
     });
 
     // Close with ESC
@@ -97,7 +117,7 @@
         if (e.key === "Escape" && panel && !panel.hidden) closeChat();
     });
 
-    // --- Bubbles
+    // ----- Messages -----
     const add = (from, text, msgId, ts) => {
         if (!list) return;
         if (msgId && seen.has(msgId)) return;
@@ -132,7 +152,6 @@
     connection.onreconnecting(() => console.warn("[chat] reconnecting…"));
     connection.onreconnected(() => console.info("[chat] reconnected"));
 
-    // avoid double binding during hot reloads
     connection.off("ReceiveToGuest");
     connection.off("MessageDeleted");
     connection.off("ChatCleared");
@@ -164,14 +183,14 @@
         .then(() => { connected = true; })
         .catch(err => console.error("[chat] start error", err));
 
-    // send message
+    // Send
     form?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const msg = (input?.value || "").trim();
         if (!msg) return;
         if (!connected) { console.warn("[chat] not connected yet"); return; }
         try {
-            await connection.invoke("SendFromGuest", msg); // server echo
+            await connection.invoke("SendFromGuest", msg);
             if (input) { input.value = ""; input.focus(); }
             scrollToBottom();
         } catch (err) { console.error("[chat] send error", err); }
