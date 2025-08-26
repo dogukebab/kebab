@@ -4,23 +4,22 @@
   const widget = el("chat-widget");
   if (!widget) return;
 
-  const toggle = el("chat-toggle");
-  const panel  = el("chat-panel");
-  const closeB = el("chat-close");
-  const list   = el("chat-messages");
-  const form   = el("chat-form");
-  const input  = el("chat-input");
-  const badge  = el("chat-unread");
+  const toggle   = el("chat-toggle");
+  const panel    = el("chat-panel");
+  const closeB   = el("chat-close");
+  const list     = el("chat-messages");
+  const form     = el("chat-form");
+  const input    = el("chat-input");
+  const badge    = el("chat-unread");
   const statusEl = el("chat-status");
 
   let unread = 0, connected = false;
   const seen = new Set();
 
-  // --- Klavye yüksekliğini (iOS/Android) takip et ve CSS değişkenine yaz
+  // --- Keyboard aware bottom offset (iOS/Android)
   const vv = window.visualViewport;
   const setKb = () => {
     if (!vv) return;
-    // Klavye yüksekliği tahmini: görünür viewport daralması
     const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     document.documentElement.style.setProperty("--kb", kb + "px");
   };
@@ -28,7 +27,7 @@
   vv?.addEventListener("scroll", setKb);
   window.addEventListener("orientationchange", () => setTimeout(setKb, 50));
 
-  // --- Mesaj listesini en alta kaydır
+  // --- Helpers
   const scrollToBottom = () => {
     if (!list) return;
     requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
@@ -43,10 +42,10 @@
   function openChat() {
     if (!panel) return;
     panel.hidden = false;
-    document.body.classList.add("chat-open");   // arka plan scroll kilit
+    document.body.classList.add("chat-open");
     toggle?.setAttribute("aria-expanded", "true");
     unread = 0; updateBadge();
-    setKb();                                    // klavyeye hazır
+    setKb();
     requestAnimationFrame(() => { input?.focus(); scrollToBottom(); });
   }
 
@@ -59,33 +58,33 @@
     document.documentElement.style.setProperty("--kb", "0px");
   }
 
-  // İlk durum: kapalı
+  // Ensure initial closed state
   if (panel && !panel.hidden) closeChat();
 
-  // Toggle
+  // Toggle open/close
   toggle?.addEventListener("click", (e) => {
     e.preventDefault(); e.stopPropagation();
     (panel?.hidden ? openChat() : closeChat());
   });
 
-  // Kapat (X)
+  // Close button
   closeB?.addEventListener("click", (e) => {
     e.preventDefault(); e.stopPropagation();
     closeChat();
   });
 
-  // ESC ile kapat
+  // ESC to close
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && panel && !panel.hidden) closeChat();
   });
 
-  // iOS: input focus olduğunda kb yüksekliğini güncelle (zoom yok çünkü 16px)
+  // When focusing the input, ensure correct offset & scroll
   input?.addEventListener("focus", () => { setKb(); scrollToBottom(); });
-  input?.addEventListener("blur",  () => { setTimeout(() => {
-    document.documentElement.style.setProperty("--kb", "0px");
-  }, 100); });
+  input?.addEventListener("blur",  () => {
+    setTimeout(() => document.documentElement.style.setProperty("--kb", "0px"), 100);
+  });
 
-  // ----- Mesaj ekleme
+  // --- Render bubbles
   const add = (from, text, msgId, ts) => {
     if (!list) return;
     if (msgId && seen.has(msgId)) return;
@@ -135,8 +134,7 @@
   connection.on("ChatCleared", (_chatId) => {
     if (list) list.innerHTML = "";
     seen.clear();
-    unread = 0;
-    updateBadge();
+    unread = 0; updateBadge();
     scrollToBottom();
   });
 
@@ -151,14 +149,14 @@
     .then(() => { connected = true; })
     .catch(err => console.error("[chat] start error", err));
 
-  // Gönder
+  // Send
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const msg = (input?.value || "").trim();
     if (!msg) return;
     if (!connected) { console.warn("[chat] not connected yet"); return; }
     try {
-      await connection.invoke("SendFromGuest", msg); // server echo
+      await connection.invoke("SendFromGuest", msg);
       if (input) { input.value = ""; input.focus(); }
       scrollToBottom();
     } catch (err) { console.error("[chat] send error", err); }
@@ -168,6 +166,6 @@
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form?.requestSubmit(); }
   });
 
-  // İlk ölçüm
+  // Initial measure
   setKb();
 })();
