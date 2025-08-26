@@ -314,237 +314,177 @@ img { max-width: 100%; height: auto; display: block; }
 /* =========================  CHAT WIDGET  =========================== */
 /* =================================================================== */
 
-/* Toggle button + container stays fixed.  */
-.chat-widget{
-    position: fixed;
-    right: max(18px, env(safe-area-inset-right));
-    bottom: max(18px, env(safe-area-inset-bottom));
-    z-index: 5000;
-    font-family: inherit;
-    isolation: isolate;                 /* new stacking context */
-    contain: layout paint style;        /* isolate layout/paint */
-    will-change: transform;             /* smoother on iOS */
-    transform: translateZ(0);
-    pointer-events: auto;
+/* =================================================================== */
+/* =========================  CHAT WIDGET  =========================== */
+/* =================================================================== */
+
+/* Visual viewport + keyboard offset (updated by JS) */
+:root {
+  --vvh: 100dvh;  /* visual viewport height fallback */
+  --kb: 0px;      /* keyboard offset added to bottom */
 }
 
-/* Toggle pill */
-.chat-toggle{
-    appearance:none; border:0; cursor:pointer;
-    padding:10px 14px; border-radius:999px;
-    background:linear-gradient(180deg,#e6d386,#caa94b); color:#1e1e1e; font-weight:700;
-    box-shadow:0 10px 22px rgba(0,0,0,.18);
-}
-.chat-toggle .badge{
-    display:inline-flex; align-items:center; justify-content:center;
-    min-width:18px; height:18px; background:#c62828; color:#fff; border-radius:9px;
-    font-size:11px; margin-left:8px; padding:0 6px;
-}
-
-/* Panel */
-.chat-panel{
-    width: min(92vw, 360px);
-    height: auto;                        /* let max-height control */
-    max-height: calc(var(--vvh) - 96px); /* ← adapts to keyboard via JS */
-    background:#fff; border-radius:16px;
-    box-shadow:0 20px 40px rgba(0,0,0,.22);
-    overflow:hidden; display:grid; grid-template-rows:auto 1fr auto;
-    margin-top:12px;
-    overscroll-behavior: contain;        /* stop background scrolling */
-}
-
-/* Header */
-.chat-header{
-    display:flex; align-items:center; justify-content:space-between;
-    background:#1f1f1f; color:#fff; padding:10px 12px;
-}
-.chat-title{ font-weight:700; }
-.chat-close{ background:transparent; color:#fff; border:0; font-size:20px; cursor:pointer; }
-
-/* Body */
-.chat-messages{
-    padding:12px; overflow:auto; background:#f8f6f0;
-    -webkit-overflow-scrolling: touch;   /* smooth iOS scroll */
-    overscroll-behavior: contain;
-}
-
-/* Bubbles */
-.bubble{ max-width:80%; padding:8px 10px; margin:8px 0; border-radius:14px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.06); }
-.bubble.mine{ margin-left:auto; background:#ffe7a8; }
-.bubble.theirs{ margin-right:auto; background:#fff; }
-.bubble-text{ font-size:14px; }
-.bubble-time{ font-size:11px; opacity:.65; margin-top:4px; text-align:right; }
-
-/* Form */
-.chat-form{
-    display:grid; grid-template-columns:1fr auto; gap:8px;
-    padding:10px; border-top:1px solid rgba(0,0,0,.06); background:#faf8f3;
-}
-.chat-input{ border:1px solid rgba(0,0,0,.2); border-radius:10px; padding:10px 12px; font-size:14px; }
-.chat-send{ border:0; border-radius:10px; padding:10px 14px; background:#c62828; color:#fff; font-weight:700; cursor:pointer; }
-.chat-send:hover{ filter:brightness(.95); }
-
-@media (max-width:480px){ .chat-panel{ height:auto; } }
-
-.chat-status{ font-size:12px; opacity:.7; }
-.chat-status.online{ color:#1b5e20; opacity:1; }
-
-/* keep hidden panels truly out of flow */
-#chat-panel[hidden]{ display:none !important; }
-
-/* Lock page scroll while chat open (prevents layout jank) */
-body.chat-open{ overflow:hidden; overscroll-behavior:none; }
-
-
-
-/* ==== CHAT (iOS-safe) ==== */
-:root { --vvh: 100dvh; } /* JS keeps this in sync with visual viewport */
-
-.chat-widget{
-    position: fixed;
-    right: max(18px, env(safe-area-inset-right));
-    bottom: max(18px, env(safe-area-inset-bottom));
-    z-index: 5000;
-    font-family: inherit;
-    isolation: isolate;
-    contain: layout paint style;
-    pointer-events: auto;
-}
-
-/* Button */
-.chat-toggle{
-    appearance:none; border:0; cursor:pointer;
-    padding:10px 14px; border-radius:999px;
-    background:linear-gradient(180deg,#e6d386,#caa94b); color:#1e1e1e; font-weight:700;
-    box-shadow:0 10px 22px rgba(0,0,0,.18);
-}
-.chat-toggle .badge{
-    display:inline-flex; align-items:center; justify-content:center;
-    min-width:18px; height:18px; background:#c62828; color:#fff; border-radius:9px;
-    font-size:11px; margin-left:8px; padding:0 6px;
-}
-
-/* Panel width responds to the *visual* viewport */
-.chat-panel{
-    width: min(92vw, 360px);                 /* fallback */
-    height: auto;
-    max-height: calc(var(--vvh) - 96px);
-    background:#fff; border-radius:16px;
-    box-shadow:0 20px 40px rgba(0,0,0,.22);
-    overflow:hidden; display:grid; grid-template-rows:auto 1fr auto;
-    margin-top:12px;
-    overscroll-behavior: contain;
-}
-@supports (width: 100dvw){
-    .chat-panel{ width: min(92dvw, 360px); } /* visual viewport aware */
-}
-
-.chat-header{ display:flex; align-items:center; justify-content:space-between; background:#1f1f1f; color:#fff; padding:10px 12px; }
-.chat-title{ font-weight:700; }
-.chat-close{ background:transparent; color:#fff; border:0; font-size:20px; cursor:pointer; }
-
-.chat-messages{
-    padding:12px; overflow:auto; background:#f8f6f0;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-}
-
-/* bubbles */
-.bubble{ max-width:80%; padding:8px 10px; margin:8px 0; border-radius:14px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.06); }
-.bubble.mine{ margin-left:auto; background:#ffe7a8; }
-.bubble.theirs{ margin-right:auto; background:#fff; }
-.bubble-text{ font-size:14px; }
-.bubble-time{ font-size:11px; opacity:.65; margin-top:4px; text-align:right; }
-
-/* IMPORTANT: 16px to prevent iOS input zoom */
-.chat-form{ display:grid; grid-template-columns:1fr auto; gap:8px; padding:10px; border-top:1px solid rgba(0,0,0,.06); background:#faf8f3; }
-.chat-input{
-    border:1px solid rgba(0,0,0,.2);
-    border-radius:10px;
-    padding:10px 12px;
-    font-size:16px;            /* ← prevents iOS zoom */
-    line-height:1.25;
-    min-height:44px;           /* comfortable tap target */
-}
-.chat-send{
-    border:0; border-radius:10px; padding:10px 14px; background:#c62828; color:#fff; font-weight:700; cursor:pointer;
-}
-.chat-send:hover{ filter:brightness(.95); }
-
-@media (max-width: 480px){ .chat-panel{ height:auto; } }
-
-.chat-status{ font-size:12px; opacity:.7; }
-.chat-status.online{ color:#1b5e20; opacity:1; }
-
-#chat-panel[hidden]{ display:none !important; }
-
-/* lock page scroll while chat is open */
-body.chat-open{ overflow:hidden; overscroll-behavior:none; }
-
-/* --- iOS input zoom fix & small guards (place at END of site.css) --- */
-html { -webkit-text-size-adjust: 100%; }
-
-/* iOS: keep page from zoom-jumping when focusing inputs */
-@supports (-webkit-touch-callout: none) {
-  input, textarea, select, button {
-    font-size: 16px !important;
-  }
-}
-
-/* Your chat input/buttons specifically */
-.chat-input { font-size: 16px !important; }
-.chat-send  { font-size: 16px !important; }
-
-/* If the page still gets a horizontal scrollbar, clip it just in case */
-html, body { overflow-x: clip; width: 100%; }
-
- /* ---- iOS odak zoom’unu kapat (input >=16px) ---- */
-html { -webkit-text-size-adjust: 100%; }
-
-/* Chat giriş alanı: 16px şart (iOS zoom’u engeller) */
-.chat-input {
-  font-size: 16px;        /* ÖNEMLİ: 14px ise zoom yapar */
-  line-height: 1.3;
-}
-
-/* Chat sabit kalsın, klavyeye göre yer değiştirilsin */
-:root { --kb: 0px; } /* JS burayı güncelleyecek */
-
+/* Container & toggle stay fixed; respect safe areas */
 .chat-widget {
   position: fixed;
   right: max(18px, env(safe-area-inset-right));
   bottom: calc(max(18px, env(safe-area-inset-bottom)) + var(--kb));
   z-index: 5000;
-  isolation: isolate;
-  contain: layout paint style;
-  transform: translateZ(0);
+  font-family: inherit;
+  isolation: isolate;              /* new stacking context */
+  contain: layout paint style;     /* isolate layout/paint */
+  transform: translateZ(0);        /* GPU hint for iOS */
+  pointer-events: auto;
 }
 
-/* Panel stabil yükseklik + sadece panel içinde scroll */
+/* Toggle button (pill) */
+.chat-toggle {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,#e6d386,#caa94b);
+  color: #1e1e1e;
+  font-weight: 700;
+  box-shadow: 0 10px 22px rgba(0,0,0,.18);
+}
+.chat-toggle .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  background: #c62828;
+  color: #fff;
+  border-radius: 9px;
+  font-size: 11px;
+  margin-left: 8px;
+  padding: 0 6px;
+}
+
+/* Panel: header | messages | form  (only messages scroll) */
 .chat-panel {
-  width: min(92vw, 360px);
-  height: 440px;
-  max-height: calc(100svh - 96px);
+  width: min(92vw, 360px);             /* fallback width */
+  height: auto;
+  max-height: calc(var(--vvh) - 96px); /* respect visible viewport */
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.22);
+  overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0,0,0,.22);
-  border-radius: 16px;
-  background: #fff;
-  overscroll-behavior: contain; /* iOS bounce -> sayfayı kıpırdatmasın */
-}
-@supports (height: 100dvh) {
-  .chat-panel { max-height: calc(100dvh - 96px); }
+  margin-top: 12px;
+  overscroll-behavior: contain;        /* block background scroll/bounce */
 }
 
+/* Make width visual-viewport-aware when supported */
+@supports (width: 100dvw) {
+  .chat-panel { width: min(92dvw, 360px); }
+}
+
+/* Header */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1f1f1f;
+  color: #fff;
+  padding: 10px 12px;
+}
+.chat-title { font-weight: 700; }
+.chat-close {
+  background: transparent;
+  color: #fff;
+  border: 0;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* Messages area: the only scrollable region */
 .chat-messages {
+  min-height: 0;                       /* allow shrinking inside grid */
+  padding: 12px;
   overflow: auto;
-  overscroll-behavior: contain; /* arka planı kaydırma */
+  background: #f8f6f0;
+  -webkit-overflow-scrolling: touch;   /* smooth iOS scroll */
+  overscroll-behavior: contain;
 }
 
-/* Chat açıkken sayfa sabit kalsın */
-body.chat-open { overflow: hidden; }
+/* Bubbles */
+.bubble {
+  max-width: 80%;
+  padding: 8px 10px;
+  margin: 8px 0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+}
+.bubble.mine   { margin-left: auto; background: #ffe7a8; }
+.bubble.theirs { margin-right: auto; background: #fff; }
+.bubble-text { font-size: 14px; }
+.bubble-time  { font-size: 11px; opacity: .65; margin-top: 4px; text-align: right; }
 
-/* Panel kapalıyken tamamen yok olsun (layout’a dokunmasın) */
+/* Form pinned at bottom */
+.chat-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border-top: 1px solid rgba(0,0,0,.06);
+  background: #faf8f3;
+}
+
+/* IMPORTANT: 16px prevents iOS zoom-on-focus */
+.chat-input {
+  border: 1px solid rgba(0,0,0,.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 16px;     /* ← keep ≥16px on iOS */
+  line-height: 1.25;
+  min-height: 44px;    /* comfortable tap target */
+}
+.chat-send {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #c62828;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chat-send:hover { filter: brightness(.95); }
+
+/* Status label above toggle */
+.chat-status {
+  font-size: 12px;
+  opacity: .7;
+  margin-bottom: 6px;
+  display: block;
+  text-align: right;
+}
+.chat-status.online { color: #1b5e20; opacity: 1; }
+
+/* Keep hidden panel truly out of flow */
 #chat-panel[hidden] { display: none !important; }
 
+/* Lock background page when chat is open (prevents layout jank) */
+body.chat-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Small screens */
+@media (max-width: 480px) {
+  .chat-panel { height: auto; }
+}
+
+/* iOS input zoom guard (extra safety) */
+html { -webkit-text-size-adjust: 100%; }
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select, button { font-size: 16px !important; }
+}
+
+/* Just in case: never allow horizontal scroll caused by keyboard */
+html, body { overflow-x: clip; width: 100%; }
