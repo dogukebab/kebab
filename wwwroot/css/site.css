@@ -330,11 +330,9 @@ img { max-width: 100%; height: auto; display: block; }
   right: max(18px, env(safe-area-inset-right));
   bottom: calc(max(18px, env(safe-area-inset-bottom)) + var(--kb));
   z-index: 5000;
-  font-family: inherit;
   isolation: isolate;
   contain: layout paint style;
   transform: translateZ(0);
-  pointer-events: auto;
 }
 
 /* Toggle button */
@@ -358,16 +356,15 @@ img { max-width: 100%; height: auto; display: block; }
 /* Panel: header | messages (scrolls) | form (pinned) */
 .chat-panel {
   width: min(92vw, 360px);
-  height: 440px;                         /* fixed like desktop */
-  max-height: calc(var(--vvh) - 96px);   /* still safe if screen is short */
-  background: #fff; border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0,0,0,.22);
-  overflow: hidden;
+  height: 440px;                        /* desktop-like fixed height */
+  max-height: calc(var(--vvh) - 96px);  /* safety if screen is short */
   display: grid;
   grid-template-rows: auto 1fr auto;
-  margin-top: 12px;
-  overscroll-behavior: contain;
-}
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.22);
+  background: #fff;
+  overscroll-behavior: contain;   
 @supports (width: 100dvw) {
   .chat-panel { width: min(92dvw, 360px); }
 }
@@ -382,10 +379,8 @@ img { max-width: 100%; height: auto; display: block; }
 
 /* Only this area scrolls */
 .chat-messages {
-  min-height: 0;
-  padding: 12px;
+  min-height: 0;                        /* allow shrink in grid */
   overflow: auto;
-  background: #f8f6f0;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
@@ -430,11 +425,11 @@ img { max-width: 100%; height: auto; display: block; }
 /* Lock the background when chat is open (desktop-like) */
 body.chat-open {
   position: fixed;
+  left: 0; right: 0;                     /* avoid width shift */
   width: 100%;
   overflow: hidden;
   overscroll-behavior: none;
 }
-
 /* iOS input zoom guard (extra safety) */
 html { -webkit-text-size-adjust: 100%; }
 @supports (-webkit-touch-callout: none) {
