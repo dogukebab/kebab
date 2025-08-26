@@ -1,7 +1,7 @@
 // wwwroot/js/chatwidget.js
 (() => {
   const $ = (id) => document.getElementById(id);
-  const widget = $("chat-widget");
+  const widget  = $("chat-widget");
   if (!widget) return;
 
   const toggle   = $("chat-toggle");
@@ -16,56 +16,54 @@
   let unread = 0, connected = false;
   const seen = new Set();
 
-  /* ---------- Visual viewport + keyboard handling ---------- */
+  /* ---------- Keyboard offset: lift ONLY the input ---------- */
   const vv = window.visualViewport;
-
-  function setViewportVars() {
+  function setKb() {
     if (!vv) return;
-    // visible height (used by CSS for max-height)
-    document.documentElement.style.setProperty("--vvh", vv.height + "px");
-    // keyboard offset to lift the widget
+    // how much of the window is eaten by the keyboard
     const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     document.documentElement.style.setProperty("--kb", kb + "px");
   }
-  vv?.addEventListener("resize", setViewportVars);
-  vv?.addEventListener("scroll", setViewportVars);
-  window.addEventListener("orientationchange", () => setTimeout(setViewportVars, 60));
-  setViewportVars();
+  vv?.addEventListener("resize", setKb);
+  vv?.addEventListener("scroll", setKb);
+  window.addEventListener("orientationchange", () => setTimeout(setKb, 60));
+  setKb();
 
-  /* ---------- Page scroll lock (prevents background moving) ---------- */
+  /* ---------- Lock page (no background movement) ---------- */
   let lockY = 0;
-  function lockPageScroll() {
+  function lockPage() {
     lockY = window.scrollY || document.documentElement.scrollTop || 0;
     document.body.style.position = "fixed";
     document.body.style.top = `-${lockY}px`;
     document.body.style.left = "0";
     document.body.style.right = "0";
+    document.body.style.width = "100%";
     document.body.classList.add("chat-open");
   }
-  function unlockPageScroll() {
+  function unlockPage() {
     document.body.classList.remove("chat-open");
     document.body.style.position = "";
     document.body.style.top = "";
     document.body.style.left = "";
     document.body.style.right = "";
+    document.body.style.width = "";
     window.scrollTo(0, lockY);
   }
-  // Block background touch scrolling while chat is open
+  // Block background touch scroll when chat is open
   document.addEventListener("touchmove", (e) => {
     if (!document.body.classList.contains("chat-open")) return;
-    if (e.target.closest("#chat-panel")) return; // allow inside the panel
+    if (e.target.closest("#chat-panel")) return; // allow inside panel
     e.preventDefault();
   }, { passive: false });
 
   /* ---------- Helpers ---------- */
+  const nearBottom = () => {
+    if (!list) return true;
+    return (list.scrollHeight - list.scrollTop - list.clientHeight) < 64;
+  };
   const scrollToBottom = () => {
     if (!list) return;
     list.scrollTop = list.scrollHeight;
-  };
-  const nearBottom = () => {
-    if (!list) return true;
-    const distance = list.scrollHeight - list.scrollTop - list.clientHeight;
-    return distance < 64; // only auto-scroll if user is already near bottom
   };
   const updateBadge = () => {
     if (!badge || !panel) return;
@@ -76,31 +74,38 @@
   function openChat() {
     if (!panel) return;
     panel.hidden = false;
-    lockPageScroll();                 // <- page won't move
+    lockPage();                   // page behind is frozen
     toggle?.setAttribute("aria-expanded", "true");
     unread = 0; updateBadge();
-    setViewportVars();
-    setTimeout(() => { input?.focus(); if (nearBottom()) scrollToBottom(); }, 0);
+    setKb();                      // compute kb before focusing
+    setTimeout(() => {
+      input?.focus();
+      if (nearBottom()) scrollToBottom();
+    }, 0);
   }
   function closeChat() {
     if (!panel) return;
     panel.hidden = true;
-    unlockPageScroll();
+    unlockPage();
     toggle?.setAttribute("aria-expanded", "false");
     updateBadge();
     document.documentElement.style.setProperty("--kb", "0px");
   }
+
   // Ensure initial closed state
   if (panel && !panel.hidden) closeChat();
 
-  // Open/close
-  toggle?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); (panel?.hidden ? openChat() : closeChat()); });
+  // Toggle
+  toggle?.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    (panel?.hidden ? openChat() : closeChat());
+  });
   closeB?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); closeChat(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && panel && !panel.hidden) closeChat(); });
 
-  // Focus tweaks
-  input?.addEventListener("focus", () => { setViewportVars(); if (nearBottom()) scrollToBottom(); });
-  input?.addEventListener("blur",  () => { setTimeout(() => document.documentElement.style.setProperty("--kb","0px"), 120); });
+  // Input focus: keep chat stable; only ensure kb offset and stick-to-bottom
+  input?.addEventListener("focus", () => { setKb(); if (nearBottom()) scrollToBottom(); });
+  input?.addEventListener("blur",  () => { /* keep kb var; no jump on send */ });
 
   /* ---------- Render bubbles ---------- */
   const add = (from, text, msgId, ts) => {
@@ -141,7 +146,11 @@
     document.querySelector(`[data-id='${messageId}']`)?.remove();
     if (nearBottom()) scrollToBottom();
   });
-  connection.on("ChatCleared", () => { if (list) list.innerHTML = ""; seen.clear(); unread = 0; updateBadge(); if (nearBottom()) scrollToBottom(); });
+  connection.on("ChatCleared", () => {
+    if (list) list.innerHTML = "";
+    seen.clear(); unread = 0; updateBadge();
+    if (nearBottom()) scrollToBottom();
+  });
   connection.on("AdminOnline", (count) => {
     if (!statusEl) return;
     const online = (count || 0) > 0;
@@ -159,7 +168,7 @@
     if (!connected) { console.warn("[chat] not connected yet"); return; }
     try {
       await connection.invoke("SendFromGuest", msg);
-      if (input) { input.value = ""; /* keep focus, no blur -> no page jump */ }
+      if (input) { input.value = ""; /* keep focus, no blur */ }
       if (nearBottom()) scrollToBottom();
     } catch (err) { console.error("[chat] send error", err); }
   });
