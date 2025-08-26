@@ -1,28 +1,30 @@
 @* Pages/Shared/_ChatWidget.cshtml *@
 <div id="chat-widget" class="chat-widget" aria-live="polite">
-    <div id="chat-status" class="chat-status">Support: checking…</div>
+  <div id="chat-status" class="chat-status">Support: checking…</div>
 
-    <button id="chat-toggle" class="chat-toggle" aria-expanded="false"
-            aria-controls="chat-panel" title="Chat met ons">
-        💬 Chat <span id="chat-unread" class="badge" hidden>0</span>
-    </button>
+  <button id="chat-toggle" class="chat-toggle" aria-expanded="false"
+          aria-controls="chat-panel" title="Chat met ons">
+    💬 Chat
+    <span id="chat-unread" class="badge" hidden>0</span>
+  </button>
 
-    <section id="chat-panel" class="chat-panel" role="dialog"
-             aria-label="Live Chat" aria-modal="false" hidden>
-        <header class="chat-header">
-            <div class="chat-title">Pepper Lier — Support</div>
-            <button id="chat-close" class="chat-close" type="button" aria-label="Close">×</button>
-        </header>
+  <section id="chat-panel" class="chat-panel" role="dialog"
+           aria-label="Live Chat" aria-modal="false" hidden>
+    <header class="chat-header">
+      <div class="chat-title">Pepper Lier — Support</div>
+      <button id="chat-close" class="chat-close" type="button" aria-label="Close">×</button>
+    </header>
 
-        <div id="chat-messages" class="chat-messages" aria-live="polite" aria-relevant="additions"></div>
+    <div id="chat-messages" class="chat-messages" aria-live="polite" aria-relevant="additions"></div>
 
-        <form id="chat-form" class="chat-form" autocomplete="off">
-            <input id="chat-input" class="chat-input" type="text"
-                   placeholder="Typ je bericht…" aria-label="Type a message" required />
-            <button class="chat-send" type="submit" aria-label="Send">Send</button>
-        </form>
-    </section>
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input id="chat-input" class="chat-input" type="text"
+             placeholder="Typ je bericht…" aria-label="Type a message" required />
+      <button class="chat-send" type="submit" aria-label="Send">Send</button>
+    </form>
+  </section>
 </div>
+
 
 <style>
     /* Put the whole widget on top-right of the page */
