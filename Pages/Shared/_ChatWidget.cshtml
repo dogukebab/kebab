@@ -23,3 +23,127 @@
     </form>
   </section>
 </div>
+
+<style>
+/* Keep page from side-scrolling (belt & braces) */
+html, body { overflow-x: clip; width: 100%; }
+
+/* Widget anchor (isolated stacking context) */
+#chat-widget {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 9999;
+  isolation: isolate;
+  contain: layout paint style;
+  font-family: inherit;
+}
+
+/* Badge & toggle */
+.chat-toggle {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,#e6d386,#caa94b);
+  color: #1e1e1e;
+  font-weight: 700;
+  box-shadow: 0 10px 22px rgba(0,0,0,.18);
+}
+.chat-toggle .badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; margin-left: 8px; padding: 0 6px;
+  background: #c62828; color: #fff; border-radius: 9px; font-size: 11px;
+}
+
+/* Panel: never exceed visible viewport width (iOS safe) */
+#chat-panel[hidden] { display: none !important; }
+
+.chat-panel {
+  box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 10px;
+  background: #fff; border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.22);
+  padding: 12px;
+
+  /* Height: adapt to visible viewport (keyboard-aware) */
+  height: clamp(420px, 70vh, 640px);
+  max-height: calc(100svh - 96px); /* visual viewport on mobile */
+}
+@supports (height: 100dvh) {
+  .chat-panel { max-height: calc(100dvh - 96px); }
+}
+
+/* Width: fallback then visual viewport units (no horizontal drift) */
+.chat-panel { max-width: 420px; width: calc(100% - 32px); }            /* base */
+@media (max-width: 600px) {
+  .chat-panel { width: calc(100vw - 32px); }                           /* legacy */
+}
+@supports (width: 100svw) {
+  .chat-panel { width: min(420px, calc(100svw - 32px)); }              /* modern */
+}
+@supports (width: 100dvw) {
+  .chat-panel { width: min(420px, calc(100dvw - 32px)); }              /* iOS 16+ */
+}
+
+/* Header */
+.chat-header {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #1f1f1f; color: #fff; padding: 10px 12px; border-radius: 12px;
+}
+.chat-title { font-weight: 700; }
+.chat-close { background: transparent; color: #fff; border: 0; font-size: 20px; cursor: pointer; }
+
+/* Messages scroll; input sticks to bottom */
+.chat-messages {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  background: #f8f6f0;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+/* Form */
+.chat-form {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding-top: 6px;
+  /* keep safely above iPhone home indicator & keyboard */
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+}
+
+/* iOS zoom prevention: 16px min font-size */
+.chat-input, .chat-send { font-size: 16px; }
+
+.chat-input {
+  border: 1px solid rgba(0,0,0,.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.chat-send {
+  border: 0; border-radius: 10px; padding: 10px 14px;
+  background: #c62828; color: #fff; font-weight: 700; cursor: pointer;
+}
+.chat-send:hover { filter: brightness(.95); }
+
+/* Bubbles */
+.bubble {
+  max-width: 80%; padding: 8px 10px; margin: 8px 0; border-radius: 14px;
+  background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.06);
+}
+.bubble.mine  { margin-left: auto; background: #ffe7a8; }
+.bubble.theirs{ margin-right: auto; background: #fff; }
+.bubble-text  { font-size: 14px; }
+.bubble-time  { font-size: 11px; opacity: .65; margin-top: 4px; text-align: right; }
+
+/* When chat is open, freeze the page behind */
+body.chat-open { overflow: hidden; }
+</style>
