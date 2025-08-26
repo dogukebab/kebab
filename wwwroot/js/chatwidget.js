@@ -15,9 +15,23 @@
 
   let unread = 0, connected = false;
   const seen = new Set();
-
-  // ---- Page scroll lock (desktop-like: background never moves)
   let pageScrollY = 0;
+
+  // ----- Visual viewport (keyboard) → CSS vars (--vvh, --kb)
+  const vv = window.visualViewport;
+  const syncViewportVars = () => {
+    if (!vv) return;
+    const vvh = Math.round(vv.height);
+    const kb  = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    const root = document.documentElement.style;
+    root.setProperty("--vvh", vvh + "px");
+    root.setProperty("--kb",  kb  + "px"); // pushes widget up, page stays put
+  };
+  vv?.addEventListener("resize", syncViewportVars);
+  vv?.addEventListener("scroll", syncViewportVars);
+  window.addEventListener("orientationchange", () => setTimeout(syncViewportVars, 150));
+
+  // ----- True page scroll lock (desktop-like)
   function lockPageScroll() {
     pageScrollY = window.scrollY || document.documentElement.scrollTop || 0;
     document.body.style.top = `-${pageScrollY}px`;
@@ -29,19 +43,26 @@
     window.scrollTo(0, pageScrollY);
   }
 
-  // ---- Helpers
-  const atBottom = () => {
+  // Block page touchmove while allowing scroll inside the chat panel only
+  function allowScroll(el) {
+    return !!el && (el === list || el.closest?.("#chat-panel"));
+  }
+  function onTouchMove(e) {
+    if (!document.body.classList.contains("chat-open")) return;
+    if (!allowScroll(e.target)) e.preventDefault();
+  }
+  document.addEventListener("touchmove", onTouchMove, { passive: false });
+
+  // ----- Helpers
+  const nearBottom = () => {
     if (!list) return true;
     const delta = list.scrollHeight - list.scrollTop - list.clientHeight;
     return delta < 48; // "near bottom" threshold
   };
-
   const scrollToBottom = () => {
     if (!list) return;
-    // smooth/batched; does not affect page
     requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
   };
-
   const updateBadge = () => {
     if (!badge || !panel) return;
     badge.textContent = unread > 99 ? "99+" : String(unread);
@@ -54,10 +75,11 @@
     toggle?.setAttribute("aria-expanded", "true");
     unread = 0; updateBadge();
     lockPageScroll();
-    // focus without scrolling the page
+    syncViewportVars(); // measure immediately
+    // focus without auto-scrolling the page
     requestAnimationFrame(() => { try { input?.focus({ preventScroll: true }); } catch {} });
-    // keep messages in view but do not force if user has history
-    if (atBottom()) scrollToBottom();
+    // stick to bottom only if already there
+    if (nearBottom()) scrollToBottom();
   }
 
   function closeChat() {
@@ -66,41 +88,40 @@
     toggle?.setAttribute("aria-expanded", "false");
     updateBadge();
     unlockPageScroll();
+    // reset keyboard offset so widget snaps back to its anchor
+    document.documentElement.style.setProperty("--kb", "0px");
   }
 
-  // Ensure initial closed state
+  // Ensure initially closed
   if (panel && !panel.hidden) closeChat();
 
-  // Toggle open/close
+  // Toggle
   toggle?.addEventListener("click", (e) => {
     e.preventDefault(); e.stopPropagation();
     (panel?.hidden ? openChat() : closeChat());
   });
 
-  // Close button
+  // Close
   closeB?.addEventListener("click", (e) => {
     e.preventDefault(); e.stopPropagation();
     closeChat();
   });
 
-  // ESC to close
+  // ESC
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && panel && !panel.hidden) closeChat();
   });
 
-  // Keep the chat from jumping when focusing input
-  input?.addEventListener("focus", () => {
-    // do not auto-scroll here; only if already at bottom
-    if (atBottom()) scrollToBottom();
-  });
+  // Keep list pinned only if already at bottom when focusing
+  input?.addEventListener("focus", () => { if (nearBottom()) scrollToBottom(); });
 
-  // --- Render bubbles (smart autoscroll)
+  // ----- Render bubbles (smart autoscroll)
   const add = (from, text, msgId, ts) => {
     if (!list) return;
     if (msgId && seen.has(msgId)) return;
     if (msgId) seen.add(msgId);
 
-    const shouldStick = atBottom() || from === "You";
+    const shouldStick = nearBottom() || from === "You";
 
     const wrap = document.createElement("div");
     wrap.className = "bubble " + (from === "You" ? "mine" : "theirs");
@@ -118,9 +139,7 @@
     wrap.append(t, m);
     list.appendChild(wrap);
 
-    // Only scroll if user was at bottom OR it's our own message
     if (shouldStick) scrollToBottom();
-
     if (from !== "You" && panel?.hidden) { unread++; updateBadge(); }
   };
 
@@ -169,13 +188,20 @@
     if (!connected) { console.warn("[chat] not connected yet"); return; }
     try {
       await connection.invoke("SendFromGuest", msg);
-      if (input) { input.value = ""; try { input.focus({ preventScroll: true }); } catch {} }
-      // only scroll if we were at bottom (handled in add via echo)
+      if (input) {
+        input.value = "";
+        // On iOS, focus immediately after submit sometimes fails;
+        // a short microtask/timeout makes it reliable.
+        setTimeout(() => { try { input.focus({ preventScroll: true }); } catch {} }, 0);
+      }
     } catch (err) { console.error("[chat] send error", err); }
   });
 
-  // Enter to send (no shift for newline)
+  // Enter to send
   input?.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form?.requestSubmit(); }
   });
+
+  // Initial measurement (important on iOS)
+  syncViewportVars();
 })();
