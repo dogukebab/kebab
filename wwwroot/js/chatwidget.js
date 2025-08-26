@@ -1,7 +1,7 @@
 // wwwroot/js/chatwidget.js
 (() => {
   const el = (id) => document.getElementById(id);
-  const widget = el("chat-widget");
+  const widget   = el("chat-widget");
   if (!widget) return;
 
   const toggle   = el("chat-toggle");
@@ -16,20 +16,29 @@
   let unread = 0, connected = false;
   const seen = new Set();
 
-  // --- Keyboard aware bottom offset (iOS/Android)
-  const vv = window.visualViewport;
-  const setKb = () => {
-    if (!vv) return;
-    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-    document.documentElement.style.setProperty("--kb", kb + "px");
-  };
-  vv?.addEventListener("resize", setKb);
-  vv?.addEventListener("scroll", setKb);
-  window.addEventListener("orientationchange", () => setTimeout(setKb, 50));
+  // ---- Page scroll lock (desktop-like: background never moves)
+  let pageScrollY = 0;
+  function lockPageScroll() {
+    pageScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.top = `-${pageScrollY}px`;
+    document.body.classList.add("chat-open");
+  }
+  function unlockPageScroll() {
+    document.body.classList.remove("chat-open");
+    document.body.style.top = "";
+    window.scrollTo(0, pageScrollY);
+  }
 
-  // --- Helpers
+  // ---- Helpers
+  const atBottom = () => {
+    if (!list) return true;
+    const delta = list.scrollHeight - list.scrollTop - list.clientHeight;
+    return delta < 48; // "near bottom" threshold
+  };
+
   const scrollToBottom = () => {
     if (!list) return;
+    // smooth/batched; does not affect page
     requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
   };
 
@@ -42,20 +51,21 @@
   function openChat() {
     if (!panel) return;
     panel.hidden = false;
-    document.body.classList.add("chat-open");
     toggle?.setAttribute("aria-expanded", "true");
     unread = 0; updateBadge();
-    setKb();
-    requestAnimationFrame(() => { input?.focus(); scrollToBottom(); });
+    lockPageScroll();
+    // focus without scrolling the page
+    requestAnimationFrame(() => { try { input?.focus({ preventScroll: true }); } catch {} });
+    // keep messages in view but do not force if user has history
+    if (atBottom()) scrollToBottom();
   }
 
   function closeChat() {
     if (!panel) return;
     panel.hidden = true;
-    document.body.classList.remove("chat-open");
     toggle?.setAttribute("aria-expanded", "false");
     updateBadge();
-    document.documentElement.style.setProperty("--kb", "0px");
+    unlockPageScroll();
   }
 
   // Ensure initial closed state
@@ -78,17 +88,19 @@
     if (e.key === "Escape" && panel && !panel.hidden) closeChat();
   });
 
-  // When focusing the input, ensure correct offset & scroll
-  input?.addEventListener("focus", () => { setKb(); scrollToBottom(); });
-  input?.addEventListener("blur",  () => {
-    setTimeout(() => document.documentElement.style.setProperty("--kb", "0px"), 100);
+  // Keep the chat from jumping when focusing input
+  input?.addEventListener("focus", () => {
+    // do not auto-scroll here; only if already at bottom
+    if (atBottom()) scrollToBottom();
   });
 
-  // --- Render bubbles
+  // --- Render bubbles (smart autoscroll)
   const add = (from, text, msgId, ts) => {
     if (!list) return;
     if (msgId && seen.has(msgId)) return;
     if (msgId) seen.add(msgId);
+
+    const shouldStick = atBottom() || from === "You";
 
     const wrap = document.createElement("div");
     wrap.className = "bubble " + (from === "You" ? "mine" : "theirs");
@@ -105,7 +117,9 @@
 
     wrap.append(t, m);
     list.appendChild(wrap);
-    scrollToBottom();
+
+    // Only scroll if user was at bottom OR it's our own message
+    if (shouldStick) scrollToBottom();
 
     if (from !== "You" && panel?.hidden) { unread++; updateBadge(); }
   };
@@ -128,14 +142,12 @@
 
   connection.on("MessageDeleted", (_chatId, messageId) => {
     document.querySelector(`[data-id='${messageId}']`)?.remove();
-    scrollToBottom();
   });
 
   connection.on("ChatCleared", (_chatId) => {
     if (list) list.innerHTML = "";
     seen.clear();
     unread = 0; updateBadge();
-    scrollToBottom();
   });
 
   connection.on("AdminOnline", (count) => {
@@ -157,15 +169,13 @@
     if (!connected) { console.warn("[chat] not connected yet"); return; }
     try {
       await connection.invoke("SendFromGuest", msg);
-      if (input) { input.value = ""; input.focus(); }
-      scrollToBottom();
+      if (input) { input.value = ""; try { input.focus({ preventScroll: true }); } catch {} }
+      // only scroll if we were at bottom (handled in add via echo)
     } catch (err) { console.error("[chat] send error", err); }
   });
 
+  // Enter to send (no shift for newline)
   input?.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form?.requestSubmit(); }
   });
-
-  // Initial measure
-  setKb();
 })();
