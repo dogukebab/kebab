@@ -939,4 +939,36 @@ img {
     }
 #chat-panel[hidden] {
     display: none !important;
+}  
+
+
+
+/* ==== Chat: mobile-safe isolation & sizing (append to end of site.css) ==== */
+.chat-widget{
+  /* keep the chat out of page layout flow on mobile */
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 5000;
+  isolation: isolate;                /* new stacking context, no bleed */
+  contain: layout paint style;       /* isolate layout/paint */
 }
+
+/* let the panel size itself to the visible viewport on phones */
+.chat-panel{
+  max-height: calc(100svh - 96px);
+}
+@supports (height: 100dvh){
+  .chat-panel{
+    max-height: calc(100dvh - 96px);
+  }
+}
+
+/* optional: prevent background page from scrolling when chat is open */
+body.chat-open{
+  overflow: hidden;
+}
+
+/* already good, keep this to ensure closed state truly removes it from flow */
+#chat-panel[hidden]{ display: none !important; }
+
