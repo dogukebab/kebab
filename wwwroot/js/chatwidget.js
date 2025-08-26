@@ -16,51 +16,54 @@
     let unread = 0, connected = false;
     const seen = new Set();
 
-    // --- iOS visual viewport fix: keep widget anchored and centered
-    const applyViewportFix = () => {
+    // ----- iOS visual viewport anchoring (prevents sideways jump) -----
+    const margin = 18;
+    const setVvh = () => {
         const vv = window.visualViewport;
-        const vvh = vv ? vv.height : window.innerHeight;
+        const h = vv ? vv.height : window.innerHeight;
+        document.documentElement.style.setProperty("--vvh", `${h}px`);
+    };
 
-        // update CSS var used by panel max-height
-        document.documentElement.style.setProperty("--vvh", `${vvh}px`);
+    const positionWidget = () => {
+        const vv = window.visualViewport;
+        if (!vv) { setVvh(); return; }
 
-        // bottom overlap (keyboard height portion)
-        let extraBottom = 0;
-        if (vv) {
-            const overlap = window.innerHeight - (vv.height + vv.offsetTop);
-            if (overlap > 0) extraBottom = overlap;
-        }
+        // keep panel height tied to keyboard
+        setVvh();
+
+        // compute left so the widget hugs the *right* of the visual viewport
+        const w = widget.offsetWidth || 0;
+        const left = vv.offsetLeft + vv.width - w - margin;
+        widget.style.left = `${Math.max(0, left)}px`;
+        widget.style.right = "auto";
+
+        // keep above keyboard area
+        const overlap = window.innerHeight - (vv.height + vv.offsetTop);
+        const extraBottom = overlap > 0 ? overlap : 0;
         widget.style.bottom = `calc(max(18px, env(safe-area-inset-bottom)) + ${extraBottom}px)`;
-
-        // horizontal nudge to cancel iOS's sideways pan when keyboard shows
-        const offsetX = (window.visualViewport?.offsetLeft || 0);
-        widget.style.transform = `translate(${offsetX}px, 0) translateZ(0)`;
     };
 
-    const addViewportListeners = () => {
+    const attachViewportHandlers = () => {
         if (!window.visualViewport) return;
-        window.visualViewport.addEventListener("resize", applyViewportFix);
-        window.visualViewport.addEventListener("scroll", applyViewportFix);
-        applyViewportFix();
+        window.visualViewport.addEventListener("resize", positionWidget);
+        window.visualViewport.addEventListener("scroll", positionWidget);
+        positionWidget();
     };
-    const removeViewportListeners = () => {
+    const detachViewportHandlers = () => {
         if (!window.visualViewport) return;
-        window.visualViewport.removeEventListener("resize", applyViewportFix);
-        window.visualViewport.removeEventListener("scroll", applyViewportFix);
+        window.visualViewport.removeEventListener("resize", positionWidget);
+        window.visualViewport.removeEventListener("scroll", positionWidget);
         document.documentElement.style.removeProperty("--vvh");
-        widget.style.bottom = "";    // back to CSS default
-        widget.style.transform = ""; // back to CSS default
+        widget.style.left = ""; widget.style.right = ""; widget.style.bottom = "";
     };
 
-    // prevent page from scrolling/jumping while chat is open (but allow inside panel)
+    // block page scrolling when the chat is open (but allow inside panel)
     const blockOutsideTouchScroll = (e) => {
         if (!panel || panel.hidden) return;
-        if (!panel.contains(e.target)) {
-            e.preventDefault();
-        }
+        if (!panel.contains(e.target)) e.preventDefault();
     };
 
-    // --- Always scroll messages to bottom
+    // ----- scroll helper -----
     const scrollToBottom = () => {
         if (!list) return;
         requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
@@ -78,9 +81,12 @@
         document.body.classList.add("chat-open");
         toggle?.setAttribute("aria-expanded", "true");
         unread = 0; updateBadge();
-        addViewportListeners();
 
-        // block outside scroll on iOS
+        // iOS: keep anchored to visual viewport
+        attachViewportHandlers();
+
+        // extra: if focusing causes reflow, recalc
+        panel.addEventListener("focusin", positionWidget);
         document.addEventListener("touchmove", blockOutsideTouchScroll, { passive: false });
 
         requestAnimationFrame(() => { input?.focus(); scrollToBottom(); });
@@ -92,12 +98,13 @@
         document.body.classList.remove("chat-open");
         toggle?.setAttribute("aria-expanded", "false");
         updateBadge();
-        removeViewportListeners();
 
+        detachViewportHandlers();
+        panel.removeEventListener("focusin", positionWidget);
         document.removeEventListener("touchmove", blockOutsideTouchScroll);
     }
 
-    // Ensure initial closed state
+    // start closed
     if (panel) panel.hidden = true;
 
     // Toggle
