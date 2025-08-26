@@ -1,67 +1,71 @@
 // wwwroot/js/chatwidget.js
 (() => {
-  const el = (id) => document.getElementById(id);
-  const widget   = el("chat-widget");
+  const $ = (id) => document.getElementById(id);
+  const widget = $("chat-widget");
   if (!widget) return;
 
-  const toggle   = el("chat-toggle");
-  const panel    = el("chat-panel");
-  const closeB   = el("chat-close");
-  const list     = el("chat-messages");
-  const form     = el("chat-form");
-  const input    = el("chat-input");
-  const badge    = el("chat-unread");
-  const statusEl = el("chat-status");
+  const toggle   = $("chat-toggle");
+  const panel    = $("chat-panel");
+  const closeB   = $("chat-close");
+  const list     = $("chat-messages");
+  const form     = $("chat-form");
+  const input    = $("chat-input");
+  const badge    = $("chat-unread");
+  const statusEl = $("chat-status");
 
   let unread = 0, connected = false;
   const seen = new Set();
-  let pageScrollY = 0;
 
-  // ----- Visual viewport (keyboard) → CSS vars (--vvh, --kb)
+  /* ---------- Visual viewport + keyboard handling ---------- */
   const vv = window.visualViewport;
-  const syncViewportVars = () => {
-    if (!vv) return;
-    const vvh = Math.round(vv.height);
-    const kb  = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-    const root = document.documentElement.style;
-    root.setProperty("--vvh", vvh + "px");
-    root.setProperty("--kb",  kb  + "px"); // pushes widget up, page stays put
-  };
-  vv?.addEventListener("resize", syncViewportVars);
-  vv?.addEventListener("scroll", syncViewportVars);
-  window.addEventListener("orientationchange", () => setTimeout(syncViewportVars, 150));
 
-  // ----- True page scroll lock (desktop-like)
+  function setViewportVars() {
+    if (!vv) return;
+    // visible height (used by CSS for max-height)
+    document.documentElement.style.setProperty("--vvh", vv.height + "px");
+    // keyboard offset to lift the widget
+    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty("--kb", kb + "px");
+  }
+  vv?.addEventListener("resize", setViewportVars);
+  vv?.addEventListener("scroll", setViewportVars);
+  window.addEventListener("orientationchange", () => setTimeout(setViewportVars, 60));
+  setViewportVars();
+
+  /* ---------- Page scroll lock (prevents background moving) ---------- */
+  let lockY = 0;
   function lockPageScroll() {
-    pageScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-    document.body.style.top = `-${pageScrollY}px`;
+    lockY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${lockY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
     document.body.classList.add("chat-open");
   }
   function unlockPageScroll() {
     document.body.classList.remove("chat-open");
+    document.body.style.position = "";
     document.body.style.top = "";
-    window.scrollTo(0, pageScrollY);
+    document.body.style.left = "";
+    document.body.style.right = "";
+    window.scrollTo(0, lockY);
   }
-
-  // Block page touchmove while allowing scroll inside the chat panel only
-  function allowScroll(el) {
-    return !!el && (el === list || el.closest?.("#chat-panel"));
-  }
-  function onTouchMove(e) {
+  // Block background touch scrolling while chat is open
+  document.addEventListener("touchmove", (e) => {
     if (!document.body.classList.contains("chat-open")) return;
-    if (!allowScroll(e.target)) e.preventDefault();
-  }
-  document.addEventListener("touchmove", onTouchMove, { passive: false });
+    if (e.target.closest("#chat-panel")) return; // allow inside the panel
+    e.preventDefault();
+  }, { passive: false });
 
-  // ----- Helpers
-  const nearBottom = () => {
-    if (!list) return true;
-    const delta = list.scrollHeight - list.scrollTop - list.clientHeight;
-    return delta < 48; // "near bottom" threshold
-  };
+  /* ---------- Helpers ---------- */
   const scrollToBottom = () => {
     if (!list) return;
-    requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
+    list.scrollTop = list.scrollHeight;
+  };
+  const nearBottom = () => {
+    if (!list) return true;
+    const distance = list.scrollHeight - list.scrollTop - list.clientHeight;
+    return distance < 64; // only auto-scroll if user is already near bottom
   };
   const updateBadge = () => {
     if (!badge || !panel) return;
@@ -72,56 +76,39 @@
   function openChat() {
     if (!panel) return;
     panel.hidden = false;
+    lockPageScroll();                 // <- page won't move
     toggle?.setAttribute("aria-expanded", "true");
     unread = 0; updateBadge();
-    lockPageScroll();
-    syncViewportVars(); // measure immediately
-    // focus without auto-scrolling the page
-    requestAnimationFrame(() => { try { input?.focus({ preventScroll: true }); } catch {} });
-    // stick to bottom only if already there
-    if (nearBottom()) scrollToBottom();
+    setViewportVars();
+    setTimeout(() => { input?.focus(); if (nearBottom()) scrollToBottom(); }, 0);
   }
-
   function closeChat() {
     if (!panel) return;
     panel.hidden = true;
+    unlockPageScroll();
     toggle?.setAttribute("aria-expanded", "false");
     updateBadge();
-    unlockPageScroll();
-    // reset keyboard offset so widget snaps back to its anchor
     document.documentElement.style.setProperty("--kb", "0px");
   }
-
-  // Ensure initially closed
+  // Ensure initial closed state
   if (panel && !panel.hidden) closeChat();
 
-  // Toggle
-  toggle?.addEventListener("click", (e) => {
-    e.preventDefault(); e.stopPropagation();
-    (panel?.hidden ? openChat() : closeChat());
-  });
+  // Open/close
+  toggle?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); (panel?.hidden ? openChat() : closeChat()); });
+  closeB?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); closeChat(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && panel && !panel.hidden) closeChat(); });
 
-  // Close
-  closeB?.addEventListener("click", (e) => {
-    e.preventDefault(); e.stopPropagation();
-    closeChat();
-  });
+  // Focus tweaks
+  input?.addEventListener("focus", () => { setViewportVars(); if (nearBottom()) scrollToBottom(); });
+  input?.addEventListener("blur",  () => { setTimeout(() => document.documentElement.style.setProperty("--kb","0px"), 120); });
 
-  // ESC
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && panel && !panel.hidden) closeChat();
-  });
-
-  // Keep list pinned only if already at bottom when focusing
-  input?.addEventListener("focus", () => { if (nearBottom()) scrollToBottom(); });
-
-  // ----- Render bubbles (smart autoscroll)
+  /* ---------- Render bubbles ---------- */
   const add = (from, text, msgId, ts) => {
     if (!list) return;
     if (msgId && seen.has(msgId)) return;
     if (msgId) seen.add(msgId);
 
-    const shouldStick = nearBottom() || from === "You";
+    const stick = nearBottom();
 
     const wrap = document.createElement("div");
     wrap.className = "bubble " + (from === "You" ? "mine" : "theirs");
@@ -139,36 +126,22 @@
     wrap.append(t, m);
     list.appendChild(wrap);
 
-    if (shouldStick) scrollToBottom();
+    if ((stick || panel?.hidden) && from !== "system") scrollToBottom();
     if (from !== "You" && panel?.hidden) { unread++; updateBadge(); }
   };
 
-  // ----- SignalR -----
+  /* ---------- SignalR ---------- */
   const connection = new signalR.HubConnectionBuilder()
     .withUrl("/chatHub")
     .withAutomaticReconnect()
     .build();
 
-  connection.onreconnecting(() => console.warn("[chat] reconnecting…"));
-  connection.onreconnected(() => console.info("[chat] reconnected"));
-
-  connection.off("ReceiveToGuest");
-  connection.off("MessageDeleted");
-  connection.off("ChatCleared");
-  connection.off("AdminOnline");
-
   connection.on("ReceiveToGuest", (from, msg, id, ts) => add(from, msg, id, ts));
-
   connection.on("MessageDeleted", (_chatId, messageId) => {
     document.querySelector(`[data-id='${messageId}']`)?.remove();
+    if (nearBottom()) scrollToBottom();
   });
-
-  connection.on("ChatCleared", (_chatId) => {
-    if (list) list.innerHTML = "";
-    seen.clear();
-    unread = 0; updateBadge();
-  });
-
+  connection.on("ChatCleared", () => { if (list) list.innerHTML = ""; seen.clear(); unread = 0; updateBadge(); if (nearBottom()) scrollToBottom(); });
   connection.on("AdminOnline", (count) => {
     if (!statusEl) return;
     const online = (count || 0) > 0;
@@ -176,9 +149,7 @@
     statusEl.classList.toggle("online", online);
   });
 
-  connection.start()
-    .then(() => { connected = true; })
-    .catch(err => console.error("[chat] start error", err));
+  connection.start().then(() => { connected = true; }).catch(err => console.error("[chat] start error", err));
 
   // Send
   form?.addEventListener("submit", async (e) => {
@@ -188,20 +159,12 @@
     if (!connected) { console.warn("[chat] not connected yet"); return; }
     try {
       await connection.invoke("SendFromGuest", msg);
-      if (input) {
-        input.value = "";
-        // On iOS, focus immediately after submit sometimes fails;
-        // a short microtask/timeout makes it reliable.
-        setTimeout(() => { try { input.focus({ preventScroll: true }); } catch {} }, 0);
-      }
+      if (input) { input.value = ""; /* keep focus, no blur -> no page jump */ }
+      if (nearBottom()) scrollToBottom();
     } catch (err) { console.error("[chat] send error", err); }
   });
 
-  // Enter to send
   input?.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form?.requestSubmit(); }
   });
-
-  // Initial measurement (important on iOS)
-  syncViewportVars();
 })();
