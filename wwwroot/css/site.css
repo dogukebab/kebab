@@ -316,10 +316,6 @@ img { max-width: 100%; height: auto; display: block; }
 /* =========================  CHAT WIDGET  =========================== */
 /* =================================================================== */
 
-/* =================================================================== */
-/* =========================  CHAT WIDGET  =========================== */
-/* =================================================================== */
-
 /* Visual keyboard offset (JS updates this). We DON'T resize the panel. */
 :root { --kb: 0px; }
 
@@ -359,6 +355,7 @@ img { max-width: 100%; height: auto; display: block; }
   overflow:hidden;
   display:grid;grid-template-rows:auto 1fr auto;
   margin-top:12px;
+  overscroll-behavior: contain; /* stop background chain scroll */
 }
 
 /* Header */
@@ -378,6 +375,7 @@ img { max-width: 100%; height: auto; display: block; }
   background:#f8f6f0;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
+  scrollbar-gutter: stable both-edges;  /* avoid layout shift */
 }
 
 /* Bubbles */
@@ -408,8 +406,8 @@ img { max-width: 100%; height: auto; display: block; }
 /* Truly hide when closed */
 #chat-panel[hidden]{display:none !important;}
 
-/* Freeze background when chat is open */
-body.chat-open{overflow:hidden;touch-action:none;}
+/* Freeze background when chat is open (JS also sets body:fixed w/ top) */
+body.chat-open{overflow:hidden;overscroll-behavior:none;}
 
 /* iOS guards */
 html{-webkit-text-size-adjust:100%;}
