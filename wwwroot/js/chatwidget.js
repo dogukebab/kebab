@@ -16,12 +16,17 @@
   let unread = 0, connected = false;
   const seen = new Set();
 
-  /* ---------- Keyboard offset: lift ONLY the input ---------- */
+  /* ---------- iOS: prevent auto-zoom while typing ---------- */
+  const vpTag = document.querySelector('meta[name="viewport"]');
+  const vpDefault = vpTag?.getAttribute('content') || 'width=device-width, initial-scale=1';
+  function lockZoom()   { vpTag?.setAttribute('content', vpDefault + ', maximum-scale=1'); }
+  function unlockZoom() { vpTag?.setAttribute('content', vpDefault.replace(/,?\s*maximum-scale=1/, '')); }
+
+  /* ---------- Keyboard offset: compute visible viewport diff ---------- */
   const vv = window.visualViewport;
   function setKb() {
     if (!vv) return;
-    // how much of the window is eaten by the keyboard
-    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop); // px covered by kb
     document.documentElement.style.setProperty("--kb", kb + "px");
   }
   vv?.addEventListener("resize", setKb);
@@ -29,7 +34,7 @@
   window.addEventListener("orientationchange", () => setTimeout(setKb, 60));
   setKb();
 
-  /* ---------- Lock page (no background movement) ---------- */
+  /* ---------- Lock/unlock the page behind the chat ---------- */
   let lockY = 0;
   function lockPage() {
     lockY = window.scrollY || document.documentElement.scrollTop || 0;
@@ -49,10 +54,10 @@
     document.body.style.width = "";
     window.scrollTo(0, lockY);
   }
-  // Block background touch scroll when chat is open
+  // Block background touch scroll when chat is open (allow inside panel)
   document.addEventListener("touchmove", (e) => {
     if (!document.body.classList.contains("chat-open")) return;
-    if (e.target.closest("#chat-panel")) return; // allow inside panel
+    if (e.target.closest("#chat-panel")) return;
     e.preventDefault();
   }, { passive: false });
 
@@ -74,10 +79,11 @@
   function openChat() {
     if (!panel) return;
     panel.hidden = false;
-    lockPage();                   // page behind is frozen
+    lockPage();
+    lockZoom();                     // ← stop iOS zoom while focused
     toggle?.setAttribute("aria-expanded", "true");
     unread = 0; updateBadge();
-    setKb();                      // compute kb before focusing
+    setKb();
     setTimeout(() => {
       input?.focus();
       if (nearBottom()) scrollToBottom();
@@ -87,6 +93,7 @@
     if (!panel) return;
     panel.hidden = true;
     unlockPage();
+    unlockZoom();                   // ← restore normal viewport
     toggle?.setAttribute("aria-expanded", "false");
     updateBadge();
     document.documentElement.style.setProperty("--kb", "0px");
@@ -103,9 +110,9 @@
   closeB?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); closeChat(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && panel && !panel.hidden) closeChat(); });
 
-  // Input focus: keep chat stable; only ensure kb offset and stick-to-bottom
-  input?.addEventListener("focus", () => { setKb(); if (nearBottom()) scrollToBottom(); });
-  input?.addEventListener("blur",  () => { /* keep kb var; no jump on send */ });
+  // Input focus/blur hooks (keep scroll pinned & zoom locked)
+  input?.addEventListener("focus", () => { lockZoom(); setKb(); if (nearBottom()) scrollToBottom(); });
+  input?.addEventListener("blur",  () => { unlockZoom(); /* keep kb var so layout doesn't jump */ });
 
   /* ---------- Render bubbles ---------- */
   const add = (from, text, msgId, ts) => {
@@ -168,7 +175,7 @@
     if (!connected) { console.warn("[chat] not connected yet"); return; }
     try {
       await connection.invoke("SendFromGuest", msg);
-      if (input) { input.value = ""; /* keep focus, no blur */ }
+      if (input) { input.value = ""; }
       if (nearBottom()) scrollToBottom();
     } catch (err) { console.error("[chat] send error", err); }
   });
