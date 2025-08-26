@@ -416,4 +416,24 @@ html{-webkit-text-size-adjust:100%;}
 }
 
 /* Never allow accidental horizontal scroll */
-html,body{overflow-x:clip;width:100%;}
+html,body{overflow-x:clip;width:100%;}   
+
+
+
+
+ /* --- iOS input zoom fix & small guards (place at END of site.css) --- */
+html { -webkit-text-size-adjust: 100%; }
+
+/* iOS: keep page from zoom-jumping when focusing inputs */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select, button {
+    font-size: 16px !important;
+  }
+}
+
+/* Your chat input/buttons specifically */
+.chat-input { font-size: 16px !important; }
+.chat-send  { font-size: 16px !important; }
+
+/* If the page still gets a horizontal scrollbar, clip it just in case */
+html, body { overflow-x: clip; width: 100%; }
